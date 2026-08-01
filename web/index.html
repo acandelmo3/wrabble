@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wrabble | Weekly Game</title>
+<meta name="description" content="Answer one prompt, then guess who wrote what.">
+<meta name="theme-color" content="#b07f4c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c9622e'/><rect x='6' y='19' width='20' height='5' rx='1.5' fill='%23f7d477'/><rect x='8' y='13' width='16' height='5' rx='1.5' fill='%23a9cddb'/><rect x='10' y='7' width='12' height='5' rx='1.5' fill='%23f0b8c4'/></svg>">
+<!-- Set the theme before first paint so a returning reader never gets a flash
+     of daylight before their evening lamp loads. -->
+<script>
+  (function () {
+    var saved = localStorage.getItem('wrabble.theme');
+    var prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = saved || (prefersDark ? 'evening' : 'day');
+  })();
+</script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/" id="brand"><span>Wrabble</span></a>
+    <nav id="nav"></nav>
+  </header>
+  <main id="app"><div class="loading">Finding your seat…</div></main>
+  <footer class="footer">
+    <span>One prompt a week. 10 letters, 10 pages, or anywhere in between.</span>
+  </footer>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

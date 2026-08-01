@@ -1,0 +1,17 @@
+{
+  "name": "wrabble-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --env dev",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 execute wrabble --local --env dev --file=./schema.sql",
+    "db:remote": "wrangler d1 execute wrabble --remote --file=./schema.sql",
+    "test": "node --test test/*.test.js",
+    "test:e2e": "node test/e2e.mjs",
+    "players": "node scripts/dev-players.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
