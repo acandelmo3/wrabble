@@ -15,9 +15,9 @@ database_id = "REPLACE_WITH_D1_DATABASE_ID"
 [vars]
 # Public config. Secrets (DISCORD_CLIENT_SECRET, SESSION_SECRET) go in via
 # `wrangler secret put`, never here.
-APP_BASE_URL = "https://YOURNAME.github.io/wrabble"
+APP_BASE_URL = "https://acandelmo3.github.io/wrabble"
 API_BASE_URL = "https://wrabble-api.YOURSUBDOMAIN.workers.dev"
-ALLOWED_ORIGINS = "https://YOURNAME.github.io,http://localhost:5173"
+ALLOWED_ORIGINS = "https://acandelmo3.github.io,http://localhost:5173"
 DISCORD_CLIENT_ID = "1531870877778710578"
 ALLOW_TIME_TRAVEL = "false"
 
