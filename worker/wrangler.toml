@@ -10,13 +10,13 @@ crons = ["*/15 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "wrabble"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "2c956bda-a8a9-496b-8fc9-5eae6bb1d700"
 
 [vars]
 # Public config. Secrets (DISCORD_CLIENT_SECRET, SESSION_SECRET) go in via
 # `wrangler secret put`, never here.
 APP_BASE_URL = "https://acandelmo3.github.io/wrabble"
-API_BASE_URL = "https://wrabble-api.YOURSUBDOMAIN.workers.dev"
+API_BASE_URL = "https://wrabble-api.acandelmo3.workers.dev"
 ALLOWED_ORIGINS = "https://acandelmo3.github.io,http://localhost:5173"
 DISCORD_CLIENT_ID = "1531870877778710578"
 ALLOW_TIME_TRAVEL = "false"
@@ -26,7 +26,7 @@ ALLOW_TIME_TRAVEL = "false"
 [[env.dev.d1_databases]]
 binding = "DB"
 database_name = "wrabble"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "2c956bda-a8a9-496b-8fc9-5eae6bb1d700"
 
 [env.dev.vars]
 APP_BASE_URL = "http://localhost:5173"
