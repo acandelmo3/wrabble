@@ -303,7 +303,6 @@ Shown when a group is created mid-week and its first round is scheduled.
 > Named the prompt author
 > Submitted an entry
 > Turned in guesses
-> Your prompt was drawn
 
 ---
 
@@ -393,7 +392,7 @@ Shown when a group is created mid-week and its first round is scheduled.
 > Guesses saved. Change them any time before the reveal.
 
 **Prompt suggestion added** — `web/js/views.js:307`
-> Added. If it gets drawn you bank 5 points.
+> Added to the pool.
 
 **Settings saved** — `web/js/views.js:441`
 > Saved. New timings apply from the next round.
@@ -506,7 +505,7 @@ are Discord markdown. `${timestamp}` renders in each reader's own timezone.
 **Body** `(:58)`
 > ${n} entries for week ${n}. Read them and pin a name to each one.
 >
-> Results reveal ${timestamp}. **Suggest next week's prompt while you're in there** ~ if yours gets drawn you get 5 points.
+> Results reveal ${timestamp}. **Suggest next week's prompt while you're in there.**
 
 ### Sunday — results
 

@@ -305,7 +305,7 @@ function suggestCard(data) {
     try {
       await api.suggestPrompt(data.group.id, input.value.trim());
       input.value = '';
-      toast('Added. If it gets drawn you bank 5 points.', 'success');
+      toast('Added to the pool.', 'success');
       refreshView();
     } catch (err) { toast(err.message, 'error'); }
     finally { btn.disabled = false; }
@@ -367,7 +367,6 @@ const LABELS = {
   promptAuthorBonus: 'Named the prompt author',
   submitted: 'Submitted an entry',
   guessed: 'Turned in guesses',
-  promptDrawn: 'Your prompt was drawn',
 };
 
 function leaderboardCard(rows, me) {

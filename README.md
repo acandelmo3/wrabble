@@ -28,7 +28,6 @@ Every one of those times is per-group configurable (day + hour + timezone).
 | Correctly naming who wrote an entry | +3 |
 | Each player who wrongly guesses **your** entry | +1 |
 | Correctly naming who wrote the prompt | +2 |
-| Your prompt got drawn for the week | +5 |
 | Submitting an entry | +1 |
 | Turning in guesses | +1 |
 

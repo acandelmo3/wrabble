@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS prompts (
   author_id     TEXT REFERENCES users(id),     -- NULL for seeded/system prompts
   text          TEXT NOT NULL,
   status        TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'used'
-  used_round_id TEXT,
+  used_round_id TEXT,          -- the round this prompt was later drawn for
+  suggested_round_id TEXT,     -- the round during which it was suggested
   created_at    INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_prompts_pool ON prompts(group_id, status);

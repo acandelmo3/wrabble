@@ -5,7 +5,6 @@ export const POINTS = {
   promptAuthorBonus: 2,  // correctly naming who wrote this week's prompt
   submitted: 1,          // participation: you turned something in before cutoff
   guessed: 1,            // participation: you submitted a full guess sheet
-  promptDrawn: 5,        // your suggested prompt got drawn for a round
 };
 
 /**
@@ -53,8 +52,9 @@ export function scoreRound({ submissions, guesses, promptGuesses, promptAuthorId
     }
   }
 
+  // No points for having your prompt drawn — that is luck, not play. The
+  // author only features in the bonus round others guess at.
   if (promptAuthorId) {
-    bump(promptAuthorId, 'promptDrawn', POINTS.promptDrawn);
     for (const pg of promptGuesses) {
       if (pg.guesser_id === promptAuthorId) continue;
       if (pg.guessed_user_id === promptAuthorId) {

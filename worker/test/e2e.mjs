@@ -125,6 +125,25 @@ check('the refused prompt did not reach the pool',
   poolAfter.data.round.my_prompt_suggestion === 'What is the last thing you stole?',
   poolAfter.data.round.my_prompt_suggestion);
 
+// A group created mid-week is scheduled for the next opening, so opens_at is
+// in the future. A created_at >= opens_at window matched nothing there: the app
+// forgot your suggestion and the one-per-week cap silently stopped applying.
+console.log('\n— suggestion survives on a round that has not opened —');
+const future = await call(users[0], 'POST', '/api/groups', { name: 'Future', tz: 'America/New_York' });
+const fg = future.data.id;
+await call(users[0], 'POST', `/api/groups/${fg}/prompts`, { text: 'suggested before the round opens' });
+const fv = (await call(users[0], 'GET', `/api/groups/${fg}`)).data;
+if (fv.round.not_open_yet) {
+  check('suggestion is remembered on a not-yet-open round',
+    fv.round.my_prompt_suggestion === 'suggested before the round opens',
+    JSON.stringify(fv.round.my_prompt_suggestion));
+  const dup = await call(users[0], 'POST', `/api/groups/${fg}/prompts`, { text: 'second' });
+  check('one-per-week still applies before the round opens', dup.status === 409, dup.data.error);
+} else {
+  check('one-per-week enforced on an open round',
+    (await call(users[0], 'POST', `/api/groups/${fg}/prompts`, { text: 'second' })).status === 409);
+}
+
 console.log('\n— advance to guessing —');
 const adv = await call(users[0], 'POST', `/api/groups/${gid}/advance`, { to: 'guessing' });
 check('time travel to guessing', adv.status === 200, JSON.stringify(adv.data.log));

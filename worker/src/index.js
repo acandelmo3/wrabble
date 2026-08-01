@@ -286,9 +286,9 @@ async function handle(request, env, ctx) {
     if (round) {
       const existing = await env.DB.prepare(
         `SELECT text FROM prompts
-          WHERE group_id = ?1 AND author_id = ?2 AND created_at >= ?3
+          WHERE group_id = ?1 AND author_id = ?2 AND suggested_round_id = ?3
           ORDER BY created_at DESC LIMIT 1`,
-      ).bind(group.id, user.id, round.opens_at).first();
+      ).bind(group.id, user.id, round.id).first();
       if (existing) {
         throw new HttpError(409,
           'You already suggested a prompt this week ~ one each. Yours: '
@@ -297,9 +297,10 @@ async function handle(request, env, ctx) {
     }
 
     await env.DB.prepare(
-      `INSERT INTO prompts (id, group_id, author_id, text, status, created_at)
-       VALUES (?1, ?2, ?3, ?4, 'pending', ?5)`,
-    ).bind(uid(), group.id, user.id, text, now()).run();
+      `INSERT INTO prompts
+         (id, group_id, author_id, text, status, created_at, suggested_round_id)
+       VALUES (?1, ?2, ?3, ?4, 'pending', ?5, ?6)`,
+    ).bind(uid(), group.id, user.id, text, now(), round?.id ?? null).run();
     return json({ ok: true });
   }
 
@@ -416,11 +417,14 @@ async function groupView(env, group, user) {
   ).bind(round.id).first();
 
   // The prompt this player suggested during the current week, if any.
+  // Keyed on the round, not on a created_at window. A window anchored to
+  // opens_at silently matched nothing for a round scheduled in the future,
+  // so the app forgot your suggestion and let you add unlimited more.
   const mySuggestion = await db.prepare(
     `SELECT text FROM prompts
-      WHERE group_id = ?1 AND author_id = ?2 AND created_at >= ?3
+      WHERE group_id = ?1 AND author_id = ?2 AND suggested_round_id = ?3
       ORDER BY created_at DESC LIMIT 1`,
-  ).bind(group.id, user.id, round.opens_at).first();
+  ).bind(group.id, user.id, round.id).first();
 
   // Before a round opens there is nothing to show: withhold the prompt text
   // itself, not just the writing box.

@@ -55,7 +55,7 @@ export function notifyClosingSoon(group, round, appUrl, missing) {
 export function notifyGuessing(group, round, appUrl, count) {
   return post(group.webhook_url, {
     title: 'Answers are in ~ time to guess',
-    description: `${count} ${count === 1 ? 'entry' : 'entries'} for week ${round.week_index}. Read them and pin a name to each one.\n\nResults reveal ${ts(round.reveals_at)}. **Suggest next week's prompt while you're in there** ~ if yours gets drawn you get 5 points.`,
+    description: `${count} ${count === 1 ? 'entry' : 'entries'} for week ${round.week_index}. Read them and pin a name to each one.\n\nResults reveal ${ts(round.reveals_at)}. **Suggest next week's prompt while you're in there.**`,
     color: COLORS.guessing,
     url: `${appUrl}#/g/${group.id}`,
     footer: { text: group.name },

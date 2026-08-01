@@ -139,7 +139,9 @@ a { color: inherit; }
   .brand { font-size: 1.1rem; gap: .35rem; }
   .brand .art { width: 27px; height: 21px; }
   .topbar .btn { padding: .4rem .6rem; font-size: .87rem; }
-  .theme-toggle { width: 2.3rem; height: 2.3rem; flex: 0 0 2.3rem; }
+  /* Must out-specify `.topbar .btn` above, or the toggle inherits its
+     asymmetric padding inside a fixed square and the icon sits off-centre. */
+  .topbar .theme-toggle { padding: 0; width: 2.3rem; height: 2.3rem; flex: 0 0 2.3rem; }
   .theme-toggle .art, .theme-toggle .art-wrap { width: 20px; }
 }
 

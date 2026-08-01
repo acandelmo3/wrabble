@@ -72,7 +72,7 @@ test('participation for guessing is granted once, not per guess', () => {
   assert.equal(breakdownFor(rows, 'alice').correctGuess, POINTS.correctGuess * 2);
 });
 
-test('prompt author banks points and correct bonus guesses pay out', () => {
+test('naming the prompt author pays out, but writing it does not', () => {
   const rows = scoreRound({
     submissions: subs,
     guesses: [],
@@ -83,7 +83,9 @@ test('prompt author banks points and correct bonus guesses pay out', () => {
     promptAuthorId: 'carol',
     memberIds: members,
   });
-  assert.equal(breakdownFor(rows, 'carol').promptDrawn, POINTS.promptDrawn);
+  // Having your prompt drawn is luck, not play — it scores nothing.
+  assert.equal(breakdownFor(rows, 'carol').promptDrawn, undefined);
+  assert.equal(pointsFor(rows, 'carol'), POINTS.submitted);
   assert.equal(breakdownFor(rows, 'alice').promptAuthorBonus, POINTS.promptAuthorBonus);
   assert.equal(breakdownFor(rows, 'bob').promptAuthorBonus, undefined);
 });
@@ -97,7 +99,6 @@ test('seeded prompts (no author) award no prompt points at all', () => {
     memberIds: members,
   });
   for (const id of members) {
-    assert.equal(breakdownFor(rows, id).promptDrawn, undefined);
     assert.equal(breakdownFor(rows, id).promptAuthorBonus, undefined);
   }
 });
