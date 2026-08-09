@@ -1,8 +1,8 @@
 # Wrabble
 
-A weekly writing game for a group of friends.
+A weekly writing game for my friends.
 
-Every week one prompt drops. Everyone writes an answer — 10 letters, 10 pages, or anywhere in between.
+Every week one prompt drops. Everyone writes an answer.
 Thursday night, submissions close and the answers appear with the names stripped
 off. You read them and pin a name to each one. Sunday night the names are
 revealed, points are tallied, and the standings carry over week to week.
