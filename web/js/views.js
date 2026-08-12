@@ -5,11 +5,10 @@ import * as art from './art.js';
 
 const DOWS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-/** Wrobby inching across the page. Three nested elements because travel, lurch
-    and frame swap are three separate animations ~ see the CSS. */
+/** Wrobby inching across the page. Travel and frame swap are separate
+    animations on separate elements ~ see the CSS. */
 const wrobbyTrack = () => h('div', { class: 'wrobby-track' },
-  h('div', { class: 'wrobby-walk' },
-    h('div', { class: 'wrobby-lurch' }, h('div', { class: 'wrobby' }))));
+  h('div', { class: 'wrobby-walk' }, h('div', { class: 'wrobby' })));
 
 // ----------------------------------------------------------------- landing
 
