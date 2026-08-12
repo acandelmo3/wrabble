@@ -158,34 +158,41 @@ export function groupView(data, refresh) {
         'Invite code ', codePill(group.invite_code),
         ` · ${members.length} ${members.length === 1 ? 'player' : 'players'}`)),
     h('div', { class: 'row' },
+      rankingsButton(),
       h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}/history` }, 'Past weeks'),
-      group.role === 'owner'
-        ? h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}/settings` }, 'Settings')
-        : null),
+      // Settings is no longer owner-only: every member goes there to set the
+      // name they use in this group. The owner-only parts are gated inside.
+      h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}/settings` }, 'Settings')),
   ));
 
   if (!round) {
     body.append(h('p', { class: 'muted' }, 'No round yet ~ check back shortly.'));
-    return body;
+  } else {
+    body.append(phaseBar(round, group, data.server_time));
+
+    if (round.phase === 'writing') body.append(writingPanel(data, refresh));
+    if (round.phase === 'guessing') body.append(guessingPanel(data, refresh));
+    if (round.phase === 'revealed') body.append(revealedPanel(data, refresh));
   }
 
-  body.append(phaseBar(round, group, data.server_time));
-
-  if (round.phase === 'writing') body.append(writingPanel(data, refresh));
-  if (round.phase === 'guessing') body.append(guessingPanel(data, refresh));
-  if (round.phase === 'revealed') body.append(revealedPanel(data, refresh));
-
+  // Always last, and always present ~ the Rankings button scrolls to it, so it
+  // has to exist even in a week that has not started.
   body.append(leaderboardCard(leaderboard, me));
-  body.append(nameCard({
-    title: `Your name in ${group.name}`,
-    blurb: 'Just here. Your other groups keep calling you what they already do.',
-    value: me.nickname,
-    // Falls back to the overall name, not the Discord one ~ that is what
-    // clearing this actually leaves you with.
-    fallback: me.display_name || me.discord_name,
-    onSave: async (v) => { await api.setNickname(group.id, v); refresh(); },
-  }));
   return body;
+}
+
+/** Jumps to the standings further down the page. */
+function rankingsButton() {
+  const btn = h('button', { class: 'btn btn-ghost', type: 'button' }, 'Rankings');
+  btn.addEventListener('click', () => {
+    const target = document.getElementById('standings');
+    if (!target) return;
+    // Same rule as the rest of the motion in here: none of it under
+    // prefers-reduced-motion.
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  });
+  return btn;
 }
 
 // serverTime anchors the countdown to the API's clock, so a skewed laptop
@@ -438,7 +445,8 @@ const LABELS = {
 };
 
 function leaderboardCard(rows, me) {
-  return h('div', { class: 'card' },
+  // id is the scroll target for the Rankings button in the group header.
+  return h('div', { class: 'card', id: 'standings' },
     h('div', { class: 'panel-head' }, art.art(art.trophy, 'art-tile'), h('h3', {}, 'Standings')),
     h('ol', { class: 'leaderboard' }, ...rows.map((r, i) =>
       h('li', { class: r.id === me.id ? 'is-me' : '' },
@@ -471,7 +479,8 @@ export function historyView(groupId, data) {
 // --------------------------------------------------------------- settings
 
 export function settingsView(data, refresh) {
-  const { group } = data;
+  const { group, me } = data;
+  const isOwner = group.role === 'owner';
   const fields = {};
   const row = (label, node, hint) => h('div', { class: 'field' },
     h('label', { class: 'label' }, label), node,
@@ -515,7 +524,22 @@ export function settingsView(data, refresh) {
   return h('div', { class: 'stack' },
     h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}` }, '← Back'),
     h('h1', {}, 'Group settings'),
-    h('div', { class: 'card' },
+
+    // Every member can set this, owner or not ~ it only changes what they
+    // themselves are called here. The owner-only sections come after.
+    nameCard({
+      title: `Your name in ${group.name}`,
+      blurb: 'Just here. Your other groups keep calling you what they already do.',
+      value: me.nickname,
+      // Falls back to the overall name, not the Discord one ~ that is what
+      // clearing this actually leaves you with.
+      fallback: me.display_name || me.discord_name,
+      onSave: async (v) => { await api.setNickname(group.id, v); refresh(); },
+    }),
+
+    // The schedule and the webhook are the owner's to set, and the API refuses
+    // them from anyone else. Hiding them beats offering a button that 403s.
+    !isOwner ? null : h('div', { class: 'card' },
       h('h3', {}, 'Schedule'),
       row('Time zone', tz, 'An IANA name, like America/New_York or Europe/Berlin.'),
       h('div', { class: 'two-col' },
@@ -527,7 +551,7 @@ export function settingsView(data, refresh) {
       h('div', { class: 'two-col' },
         row('Results reveal', dowSelect('reveal_dow', group.reveal_dow)),
         row('at', hourSelect('reveal_hour', group.reveal_hour)))),
-    h('div', { class: 'card' },
+    !isOwner ? null : h('div', { class: 'card' },
       h('h3', {}, 'Discord notifications'),
       h('p', { class: 'muted' },
         'In Discord: Channel settings → Integrations → Webhooks → New Webhook → Copy URL. ',
@@ -535,7 +559,7 @@ export function settingsView(data, refresh) {
         'starts, and when results land.'),
       row('Webhook URL', webhook),
       group.has_webhook ? h('span', { class: 'tag tag-ok' }, 'Webhook connected') : null),
-    h('div', { class: 'center' }, save),
+    !isOwner ? null : h('div', { class: 'center' }, save),
   );
 }
 
