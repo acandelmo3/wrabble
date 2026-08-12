@@ -19,3 +19,19 @@ Pick the primary file by lines changed. Omit `+N` when only one file changed.
 3. `schema.sql` only creates missing tables ~ altering one needs a numbered migration: [001-custom-names.sql](worker/migrations/001-custom-names.sql)
 4. Verify with unit tests, the full-week e2e, and the real UI driven locally: [names.test.js](worker/test/names.test.js)
 5. Never deploy, push, or run `--remote` unasked; log player-facing changes: [PATCHNOTES.md](PATCHNOTES.md)
+
+## Deployment target: homelab
+
+- **Host**: Dell XPS 15 (i7-9750H, 6c/12t, 30GB RAM, Intel UHD 630 — no discrete GPU, no CUDA). Debian 13, headless (`multi-user.target`, no desktop installed).
+- **Access**: SSH only, key-based, as user `homelab` over Tailscale at `100.107.144.35`. There is no LAN path worth relying on — see network constraints.
+- **Network constraints**: apartment building wifi with no router access. The LAN hands out CGNAT addresses (`100.64.0.0/10`), likely has client isolation, and port forwarding is impossible. **Anything hosted here is reachable only over the tailnet** — no public URLs, no inbound from the internet, no Let's Encrypt HTTP-01 challenges. Tailscale runs with `--netfilter-mode=off` to avoid a range collision with the LAN; don't re-enable its netfilter management.
+- **Containers**: Docker installed, user is in the `docker` group (no sudo needed). Global log caps are set in `/etc/docker/daemon.json` (10MB × 3) — keep new services within that pattern rather than logging unbounded.
+- **Ports in use**: 53 (Pi-hole DNS), 8080 (Pi-hole admin), 11434 (Ollama, usually stopped), 8211 (Palworld). Pick something else.
+- **Storage caveat**: the internal NVMe (Samsung PM9A1) has an unexplained spare-block depletion — 63% remaining against a 32% failure threshold at only ~3% write endurance used. It passes every health check but is not trusted. **Treat this machine as expendable**: no sole copies of anything, prefer external storage for bulk or write-heavy data, and assume it may need a rebuild.
+- **Not suitable for**: GPU inference, anything needing public ingress, anything where the machine going down would be more than an inconvenience.
+
+### How this lands on Wrabble
+
+- The dev ports already chosen (5173 web, 8787 API, 8443 for TLS) don't collide with anything above.
+- `tailscale serve` HTTPS is still fine despite the no-HTTP-01 note: Tailscale provisions `ts.net` certs through its own control plane, not an inbound challenge.
+- The local D1 lives in `worker/.wrangler/` on that disk. It is disposable dev state ~ rebuildable from `schema.sql` plus the files in `worker/migrations/` ~ so the storage caveat costs nothing here. Keep it that way; never let it become the only copy of anything.
