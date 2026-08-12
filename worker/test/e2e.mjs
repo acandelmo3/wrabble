@@ -44,9 +44,14 @@ const outsiderRow = { id: '9999', name: 'mallory' };
 execFileSync('npx', [
   'wrangler', 'd1', 'execute', 'wrabble', '--local', '--env', 'dev', '--command',
   // Upsert, not REPLACE — see the note in scripts/dev-players.mjs.
+  // display_name is reset too, not just set on insert: these ids get reused
+  // across runs, and a custom name left over from playing with the app by hand
+  // would rename the players this file asserts on.
   `INSERT INTO users (id,username,global_name,avatar,created_at) VALUES ${
     [...users, outsiderRow].map((u) => `('${u.id}','${u.name}',NULL,NULL,1)`).join(',')}
-     ON CONFLICT(id) DO UPDATE SET username = excluded.username;`,
+     ON CONFLICT(id) DO UPDATE SET username = excluded.username, display_name = NULL;
+   UPDATE memberships SET nickname = NULL WHERE user_id IN (${
+    [...users, outsiderRow].map((u) => `'${u.id}'`).join(',')});`,
 ], { stdio: 'ignore' });
 
 for (const u of users) u.token = await signToken({ sub: u.id }, SECRET);

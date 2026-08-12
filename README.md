@@ -179,6 +179,58 @@ browser profile (a normal window plus a private window is enough for two) and
 you can play a whole group by yourself. Pass names to get more: `npm run players
 ann bo cy dee`.
 
+### Running it on the homelab, over Tailscale
+
+The whole dev stack can live on the homelab and be reached from any device on
+the tailnet ~ handy for testing on a phone, or for letting someone else poke at
+a change before it ships.
+
+On the homelab, with the repo checked out and `npm install` done:
+
+```bash
+cd worker && npm run db:local
+npx wrangler d1 execute wrabble --local --env dev --file=./migrations/001-custom-names.sql
+npm run dev:lan
+```
+
+```bash
+cd web && python3 serve.py
+```
+
+`dev:lan` is the ordinary dev server bound to `0.0.0.0` instead of loopback;
+without it nothing off the box can reach the API. `serve.py` already listens on
+every interface.
+
+Then from any tailnet device: **http://homelab.tailc96b88.ts.net:5173**
+
+The web app works out which Worker to talk to from the URL it was loaded from,
+so there is nothing per-machine to edit. Only the published GitHub Pages host
+talks to the deployed Worker; everything else expects a Worker on the same host
+it came from. Adding a new dev hostname means adding its origin to
+`ALLOWED_ORIGINS` under `[env.dev.vars]`, or the browser will refuse the API
+calls.
+
+#### With HTTPS
+
+Plain http over the tailnet is fine, with one wart: `navigator.clipboard` needs
+a secure context, so the copy-the-invite-code button falls back to
+select-and-press-Ctrl+C. `tailscale serve` fixes that by giving the box a real
+certificate:
+
+```bash
+tailscale serve --bg --https=443 http://127.0.0.1:5173
+tailscale serve --bg --https=8443 http://127.0.0.1:8787
+```
+
+Then use **https://homelab.tailc96b88.ts.net**. The 8443 port for the API is
+not arbitrary ~ `web/js/config.js` looks for it whenever the page arrives over
+https. This needs HTTPS certificates enabled for the tailnet in the Tailscale
+admin console; `tailscale serve status` will say if it isn't.
+
+Either way this stays inside the tailnet. `tailscale funnel` would expose it to
+the open internet, which a dev server with `ALLOW_TIME_TRAVEL=true` and
+unauthenticated seed logins has no business being.
+
 ### Skipping ahead
 
 Waiting until Thursday to see the guessing phase is no way to test. In the `dev`

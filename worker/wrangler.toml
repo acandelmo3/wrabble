@@ -31,6 +31,10 @@ database_id = "2c956bda-a8a9-496b-8fc9-5eae6bb1d700"
 [env.dev.vars]
 APP_BASE_URL = "http://localhost:5173"
 API_BASE_URL = "http://localhost:8787"
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+# Every origin the dev app may be reached from. The tailnet entries are for
+# running the whole thing on the homelab: MagicDNS name and raw tailnet IP over
+# plain http, plus the https origin that `tailscale serve` publishes on 443.
+# CORS matches origins exactly, so each spelling needs its own entry.
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://homelab.tailc96b88.ts.net:5173,http://100.107.144.35:5173,https://homelab.tailc96b88.ts.net"
 DISCORD_CLIENT_ID = "1531870877778710578"
 ALLOW_TIME_TRAVEL = "true"
