@@ -1,0 +1,35 @@
+# Dev stack for the homelab. Tailnet-only ~ see the homelab notes in CLAUDE.md.
+#
+#   docker compose up -d --build
+#   docker compose logs -f
+#
+# Reached from the MacBook over IPv6, since the LAN's CGNAT range collides with
+# Tailscale's IPv4: http://[fd7a:115c:a1e0::bc01:90d2]:5173
+name: wrabble-dev
+
+services:
+  wrabble-dev:
+    container_name: wrabble-dev
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      # Docker publishes on both stacks here, so these are reachable over the
+      # tailnet's IPv6 as well as IPv4.
+      - "5173:5173"   # web app
+      - "8787:8787"   # worker API
+    volumes:
+      # The local D1 lives here. Disposable dev state, but keeping it in a
+      # volume means a rebuild doesn't wipe the week you were mid-way through.
+      - wrabble-dev-state:/app/worker/.wrangler
+    restart: unless-stopped
+    # Matches the global caps in /etc/docker/daemon.json rather than relying on
+    # them, since wrangler is talkative.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  wrabble-dev-state:

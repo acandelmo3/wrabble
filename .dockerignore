@@ -1,0 +1,13 @@
+# Never bake the real Discord client secret into an image.
+.dev.vars
+**/.dev.vars
+
+node_modules
+**/node_modules
+.wrangler
+**/.wrangler
+.git
+.github
+brand
+*.log
+backup-*.sql
