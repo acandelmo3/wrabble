@@ -5,11 +5,10 @@ import * as art from './art.js';
 
 const DOWS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-/** Wrobby inching across the page. Three nested elements because travel, lurch
-    and frame swap are three separate animations ~ see the CSS. */
+/** Wrobby inching across the page. Travel and frame swap are separate
+    animations on separate elements ~ see the CSS. */
 const wrobbyTrack = () => h('div', { class: 'wrobby-track' },
-  h('div', { class: 'wrobby-walk' },
-    h('div', { class: 'wrobby-lurch' }, h('div', { class: 'wrobby' }))));
+  h('div', { class: 'wrobby-walk' }, h('div', { class: 'wrobby' })));
 
 // ----------------------------------------------------------------- landing
 
@@ -207,13 +206,15 @@ export function groupView(data, refresh) {
       h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}/settings` }, 'Settings')),
   ));
 
-  body.append(wrobbyTrack());
+  // Wrobby rides behind the first block, centred on it, positioned out of flow
+  // so nothing below shifts down to make room for him.
+  body.append(h('div', { class: 'wrobby-anchor' },
+    wrobbyTrack(),
+    round
+      ? phaseBar(round, group, data.server_time)
+      : h('p', { class: 'muted' }, 'No round yet ~ check back shortly.')));
 
-  if (!round) {
-    body.append(h('p', { class: 'muted' }, 'No round yet ~ check back shortly.'));
-  } else {
-    body.append(phaseBar(round, group, data.server_time));
-
+  if (round) {
     if (round.phase === 'writing') body.append(writingPanel(data, refresh));
     if (round.phase === 'guessing') body.append(guessingPanel(data, refresh));
     if (round.phase === 'revealed') body.append(revealedPanel(data, refresh));

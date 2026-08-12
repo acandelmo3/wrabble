@@ -252,16 +252,16 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
    Three drawings run as a sawtooth: extended, mid, arch, back to extended.
    1-2-3 is one continuous scrunch — in the drawings the head stays planted and
    only the tail creeps forward — so every bit of ground he gains happens in the
-   3-back-to-1 snap, when the head finally throws forward. He holds still for
-   two thirds of the cycle and lurches through the last third. He does not glide.
+   3-back-to-1 snap, when the head finally throws forward.
 
-   That is three nested elements, each doing one job:
-     .wrobby-walk   long haul, one discrete hop of --wrobby-step per cycle
-     .wrobby-lurch  starts each cycle a full step behind and eases back to 0
-     .wrobby        the frame swap
+   Nothing eases. None of the three drawings shows a head in motion — the head
+   is planted in all of them — so there is no frame that can carry a glide, and
+   sliding him during one just makes a crunched-up worm skate. The whole step
+   lands on the single instant the arch flips back to extended: `steps()` hops
+   him one --wrobby-step exactly on that frame boundary and he is motionless
+   the rest of the cycle. The pose change and the displacement happen together,
+   so the eye reads a throw rather than a teleport.
 
-   The hop and the ease exactly cancel, so there is no visible jump at the
-   cycle boundary — the motion is continuous, just uneven, which is the point.
    Two invariants hold it together: everything tied to the cycle derives its
    duration from --wrobby-cycle, and the travel distance is exactly
    --wrobby-step x --wrobby-steps.
@@ -270,23 +270,41 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
    keyframes stop running, and without it he would have no frame at all. */
 /* Declared on the outer element so the inner animations can all read them — a
    custom property set on `.wrobby` would be invisible to its own ancestors. */
+/* Out of flow and underneath. The track stretches over the first card and
+   centres him on it — anchoring to the card rather than offsetting from the
+   header is what keeps him centred when the card grows, and it does: the phase
+   bar is 132px on a desktop and 192px once its buttons wrap.
+
+   `z-index: -1` puts him behind that card, so he slides under it and reappears
+   in the gaps, which is the whole charm of it. He has to be a *sibling* of the
+   card, not a child — a negative-z child would paint beneath the card's own
+   background and disappear completely. The anchor itself paints no background,
+   so he still reads against the paper.
+
+   Full-bleed too: he crosses the whole window, not the reading column he is
+   nested inside. The negative offset is the standard break-out — 50% of the
+   parent back to the viewport's left edge, then a full 100vw wide. */
+.wrobby-anchor { position: relative; }
 .wrobby-track {
+  position: absolute;
+  inset: 0;
+  left: calc(50% - 50vw);
+  display: flex;
+  align-items: center;
+  z-index: -1;
+  pointer-events: none;
   overflow: hidden;
-  width: 100%;
+  width: 100vw;
   --wrobby-cycle: 1.5s;  /* three frames at 2 fps */
   --wrobby-step: 58px;   /* ground covered per cycle */
-  /* Deliberately far more ground than the 780px column he crosses: he is an
-     occasional visitor, not a fixture. Roughly 25s crawling through, then a
-     minute offscreen before he comes back around. */
+  /* Deliberately far more ground than the window is wide: he is an occasional
+     visitor, not a fixture. He crosses, then stays away a good while. */
   --wrobby-steps: 60;
 }
 .wrobby-walk {
   animation: wrobby-travel calc(var(--wrobby-cycle) * var(--wrobby-steps))
              steps(var(--wrobby-steps)) infinite;
   will-change: transform;
-}
-.wrobby-lurch {
-  animation: wrobby-lurch var(--wrobby-cycle) ease-in infinite;
 }
 .wrobby {
   width: var(--wrobby-w, 150px);
@@ -302,11 +320,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
   33.333% { background-image: url(../img/wrobby-2.png); }
   66.667% { background-image: url(../img/wrobby-3.png); }
 }
-/* Planted through the scrunch, forward through the snap. */
-@keyframes wrobby-lurch {
-  0%, 66.667% { transform: translateX(calc(var(--wrobby-step) * -1)); }
-  100%        { transform: translateX(0); }
-}
+/* One hop per cycle, landing on the arch-to-extended flip. */
 @keyframes wrobby-travel {
   from { transform: translateX(-200px); }
   to   { transform: translateX(calc(-200px + var(--wrobby-step) * var(--wrobby-steps))); }
