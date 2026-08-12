@@ -5,6 +5,12 @@ import * as art from './art.js';
 
 const DOWS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+/** Wrobby inching across the page. Three nested elements because travel, lurch
+    and frame swap are three separate animations ~ see the CSS. */
+const wrobbyTrack = () => h('div', { class: 'wrobby-track' },
+  h('div', { class: 'wrobby-walk' },
+    h('div', { class: 'wrobby-lurch' }, h('div', { class: 'wrobby' }))));
+
 // ----------------------------------------------------------------- landing
 
 export function landingView() {
@@ -200,6 +206,8 @@ export function groupView(data, refresh) {
       // name they use in this group. The owner-only parts are gated inside.
       h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}/settings` }, 'Settings')),
   ));
+
+  body.append(wrobbyTrack());
 
   if (!round) {
     body.append(h('p', { class: 'muted' }, 'No round yet ~ check back shortly.'));

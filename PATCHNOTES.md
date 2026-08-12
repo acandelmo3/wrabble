@@ -12,6 +12,8 @@ if a line only matters to whoever deploys it, it belongs in the README instead.
 
 ### Added
 
+- **Wrobby.** A worm. He inches across your group page every so often, minds his
+  own business, and leaves. He is hand-drawn, and he will be doing more later.
 - **A patch notes screen**, reachable from the home page, so you can see what
   changed without being told.
 - **A Rankings button** on each group, so the standings are one tap away.

@@ -12,6 +12,9 @@ export const NOTES = [
     title: 'Launch week 1',
     date: null,
     added: [
+      'Wrobby. A worm. He inches across your group page every so often, minds '
+      + 'his own business, and leaves. He is hand-drawn, and he will be doing '
+      + 'more later.',
       'Pick your own name. Set one on the home page and every group uses it, '
       + 'or set a different name inside a single group ~ useful when one group '
       + 'knows you by something the others don\'t. Clear either to fall back to '
