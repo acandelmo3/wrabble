@@ -1,7 +1,7 @@
 import { h, mount } from './dom.js';
 import { api, getToken, captureTokenFromUrl, login, logout, ApiError } from './api.js';
 import {
-  landingView, homeView, groupView, historyView, settingsView, errorView,
+  landingView, homeView, groupView, historyView, settingsView, notesView, errorView,
 } from './views.js';
 import * as art from './art.js';
 
@@ -47,6 +47,13 @@ async function router() {
   // is a same-document navigation, so there is no reload to catch it at startup.
   if (captureTokenFromUrl()) me = null;
   const parts = parseRoute();
+
+  // Patch notes are static and interesting to a signed-out visitor too, so
+  // they come before the token check rather than behind it.
+  if (parts[0] === 'notes') {
+    renderNav();
+    return mount(notesView());
+  }
 
   if (!getToken()) {
     me = null;

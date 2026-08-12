@@ -1,5 +1,6 @@
 import { h, fmtDate, countdown, wordCount, toast, codePill } from './dom.js';
 import { api, login, logout } from './api.js';
+import { NOTES } from './notes.js';
 import * as art from './art.js';
 
 const DOWS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -39,7 +40,9 @@ export function landingView() {
 export function homeView(me, onRefresh) {
   const groups = me.groups || [];
   return h('div', { class: 'stack' },
-    h('h1', {}, `Hey, ${me.user.username}`),
+    h('div', { class: 'row space-between' },
+      h('h1', {}, `Hey, ${me.user.username}`),
+      h('a', { class: 'btn btn-ghost btn-sm', href: '#/notes' }, 'Patch notes')),
     groups.length
       // The card is a div with a stretched link rather than a big <a>: the copy
       // button has to live here too, and a <button> inside an <a> is invalid.
@@ -72,6 +75,41 @@ export function homeView(me, onRefresh) {
       hint: 'You can use a different name in any single group ~ open that group to set it.',
       onSave: async (v) => { await api.setDisplayName(v); onRefresh(); },
     }),
+  );
+}
+
+// ------------------------------------------------------------- patch notes
+
+export function notesView() {
+  // Built from the parts rather than Date.parse: an ISO date with no time is
+  // parsed as UTC, so a New York reader saw the launch dated the day before.
+  // A release date also wants no clock on it.
+  const releaseDate = (iso) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d)
+      .toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const section = (label, items) => (items && items.length
+    ? [h('h4', { class: 'notes-label' }, label),
+      h('ul', { class: 'notes-list' }, ...items.map((t) => h('li', {}, t)))]
+    : []);
+
+  return h('div', { class: 'stack' },
+    h('a', { class: 'btn btn-ghost', href: '#/' }, '← Back'),
+    h('h1', {}, 'Patch notes'),
+    h('p', { class: 'muted' }, 'What changed, newest first.'),
+    ...NOTES.map((n) => h('section', { class: 'card' },
+      h('div', { class: 'row space-between' },
+        h('h3', {}, n.title),
+        // An entry with no date has not shipped yet. Say so rather than
+        // leaving a gap where every other entry has a date.
+        h('span', { class: n.date ? 'muted' : 'tag' },
+          n.date ? releaseDate(n.date) : 'Coming next')),
+      n.text ? h('p', {}, n.text) : null,
+      ...section('Added', n.added),
+      ...section('Changed', n.changed),
+      ...section('Fixed', n.fixed))),
   );
 }
 

@@ -347,6 +347,13 @@ blockquote {
   padding-left: .8rem; border-left: 4px solid var(--berry); }
 .score-card { border-left-width: 9px; border-left-color: var(--leaf); }
 
+/* Patch notes: a run of short lists, so the group labels carry the structure. */
+.notes-label { font-family: var(--font-display); font-size: .82rem;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft);
+  margin: .9rem 0 .3rem; }
+.notes-list { margin: 0; padding-left: 1.1rem; }
+.notes-list li { margin: .35rem 0; line-height: 1.5; }
+
 .breakdown { list-style: none; padding: 0; margin: .5rem 0 0; }
 .breakdown li { display: flex; justify-content: space-between;
   padding: .35rem 0; border-bottom: 2px dotted var(--line); font-size: .95rem; }
