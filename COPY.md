@@ -168,6 +168,30 @@ Shared by both name editors — `web/js/views.js:90-135`.
 
 ---
 
+## 4c. Patch notes screen — `web/js/views.js` (notesView) and `web/js/notes.js`
+
+**Button on the home page**
+> Patch notes
+
+**Heading**
+> Patch notes
+
+**Subheading**
+> What changed, newest first.
+
+**Section labels**
+> Added
+> Changed
+> Fixed
+
+**Tag on an entry that has not shipped**
+> Coming next
+
+The entries themselves live in `web/js/notes.js`. That file is player-facing
+copy ~ edit it there, and mirror the change into `PATCHNOTES.md`.
+
+---
+
 ## 5. Group header & phase bar
 
 **Invite code prefix** — `web/js/views.js:98`

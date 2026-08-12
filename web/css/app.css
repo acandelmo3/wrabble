@@ -26,6 +26,8 @@
   --art-cool: #a9cddb;
   --art-pink: #f0b8c4;
   --art-leaf: #a8cba4;
+  --art-leaf-deep: #82ad8a;   /* Wrobby's segment bands */
+  --art-eye-glint: #fffaf0;   /* stays light in both themes — see art.js */
   --art-sun: #f7d477;
   --art-sky: #cfe7ef;
   --art-cream: #f6e7c8;
@@ -59,6 +61,8 @@
   --art-cool: #46697a;
   --art-pink: #7d4a5a;
   --art-leaf: #4e6f52;
+  --art-leaf-deep: #3c5741;
+  --art-eye-glint: #e8d5bb;
   --art-sun: #a87c33;
   --art-sky: #3d5a66;
   --art-cream: #6d5738;
@@ -244,6 +248,70 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1.5deg); } }
 .art-float { animation: bob 5.5s ease-in-out infinite; }
 
+/* --- Wrobby ---
+   Three drawings run as a sawtooth: extended, mid, arch, back to extended.
+   1-2-3 is one continuous scrunch — in the drawings the head stays planted and
+   only the tail creeps forward — so every bit of ground he gains happens in the
+   3-back-to-1 snap, when the head finally throws forward. He holds still for
+   two thirds of the cycle and lurches through the last third. He does not glide.
+
+   That is three nested elements, each doing one job:
+     .wrobby-walk   long haul, one discrete hop of --wrobby-step per cycle
+     .wrobby-lurch  starts each cycle a full step behind and eases back to 0
+     .wrobby        the frame swap
+
+   The hop and the ease exactly cancel, so there is no visible jump at the
+   cycle boundary — the motion is continuous, just uneven, which is the point.
+   Two invariants hold it together: everything tied to the cycle derives its
+   duration from --wrobby-cycle, and the travel distance is exactly
+   --wrobby-step x --wrobby-steps.
+
+   The base `background-image` is not decoration: under reduced motion the
+   keyframes stop running, and without it he would have no frame at all. */
+/* Declared on the outer element so the inner animations can all read them — a
+   custom property set on `.wrobby` would be invisible to its own ancestors. */
+.wrobby-track {
+  overflow: hidden;
+  width: 100%;
+  --wrobby-cycle: 1.5s;  /* three frames at 2 fps */
+  --wrobby-step: 58px;   /* ground covered per cycle */
+  /* Deliberately far more ground than the 780px column he crosses: he is an
+     occasional visitor, not a fixture. Roughly 25s crawling through, then a
+     minute offscreen before he comes back around. */
+  --wrobby-steps: 60;
+}
+.wrobby-walk {
+  animation: wrobby-travel calc(var(--wrobby-cycle) * var(--wrobby-steps))
+             steps(var(--wrobby-steps)) infinite;
+  will-change: transform;
+}
+.wrobby-lurch {
+  animation: wrobby-lurch var(--wrobby-cycle) ease-in infinite;
+}
+.wrobby {
+  width: var(--wrobby-w, 150px);
+  aspect-ratio: 760 / 320;
+  background-image: url(../img/wrobby-1.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform: scaleX(-1);        /* drawn facing left; he travels right */
+  animation: wrobby-crawl var(--wrobby-cycle) steps(1, end) infinite;
+}
+@keyframes wrobby-crawl {
+  0%      { background-image: url(../img/wrobby-1.png); }
+  33.333% { background-image: url(../img/wrobby-2.png); }
+  66.667% { background-image: url(../img/wrobby-3.png); }
+}
+/* Planted through the scrunch, forward through the snap. */
+@keyframes wrobby-lurch {
+  0%, 66.667% { transform: translateX(calc(var(--wrobby-step) * -1)); }
+  100%        { transform: translateX(0); }
+}
+@keyframes wrobby-travel {
+  from { transform: translateX(-200px); }
+  to   { transform: translateX(calc(-200px + var(--wrobby-step) * var(--wrobby-steps))); }
+}
+
 @keyframes settle {
   0% { opacity: 0; transform: translateY(10px) rotate(-1.5deg); }
   100% { opacity: 1; transform: translateY(0) rotate(0); }
@@ -346,6 +414,13 @@ blockquote {
 .suggested { font-size: 1.05rem; margin: .3rem 0 .6rem;
   padding-left: .8rem; border-left: 4px solid var(--berry); }
 .score-card { border-left-width: 9px; border-left-color: var(--leaf); }
+
+/* Patch notes: a run of short lists, so the group labels carry the structure. */
+.notes-label { font-family: var(--font-display); font-size: .82rem;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft);
+  margin: .9rem 0 .3rem; }
+.notes-list { margin: 0; padding-left: 1.1rem; }
+.notes-list li { margin: .35rem 0; line-height: 1.5; }
 
 .breakdown { list-style: none; padding: 0; margin: .5rem 0 0; }
 .breakdown li { display: flex; justify-content: space-between;
