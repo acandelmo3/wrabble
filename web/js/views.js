@@ -204,16 +204,17 @@ export function groupView(data, refresh) {
       // Settings is no longer owner-only: every member goes there to set the
       // name they use in this group. The owner-only parts are gated inside.
       h('a', { class: 'btn btn-ghost', href: `#/g/${group.id}/settings` }, 'Settings')),
-    // Anchored to the header rather than sitting between it and the phase bar:
-    // he is positioned out of flow, so nothing below him shifts down.
-    wrobbyTrack(),
   ));
 
-  if (!round) {
-    body.append(h('p', { class: 'muted' }, 'No round yet ~ check back shortly.'));
-  } else {
-    body.append(phaseBar(round, group, data.server_time));
+  // Wrobby rides behind the first block, centred on it, positioned out of flow
+  // so nothing below shifts down to make room for him.
+  body.append(h('div', { class: 'wrobby-anchor' },
+    wrobbyTrack(),
+    round
+      ? phaseBar(round, group, data.server_time)
+      : h('p', { class: 'muted' }, 'No round yet ~ check back shortly.')));
 
+  if (round) {
     if (round.phase === 'writing') body.append(writingPanel(data, refresh));
     if (round.phase === 'guessing') body.append(guessingPanel(data, refresh));
     if (round.phase === 'revealed') body.append(revealedPanel(data, refresh));

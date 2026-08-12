@@ -270,19 +270,27 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
    keyframes stop running, and without it he would have no frame at all. */
 /* Declared on the outer element so the inner animations can all read them — a
    custom property set on `.wrobby` would be invisible to its own ancestors. */
-/* Out of flow and underneath. He hangs off the bottom of the group header, so
-   nothing below him moves down to make room and the phase bar sits where it
-   always did. `z-index: -1` puts him behind the cards — he vanishes behind the
-   phase bar and reappears in the gaps, which is the whole charm of it. Nothing
-   above him in the tree sets a background, so he still reads against the paper.
+/* Out of flow and underneath. The track stretches over the first card and
+   centres him on it — anchoring to the card rather than offsetting from the
+   header is what keeps him centred when the card grows, and it does: the phase
+   bar is 132px on a desktop and 192px once its buttons wrap.
+
+   `z-index: -1` puts him behind that card, so he slides under it and reappears
+   in the gaps, which is the whole charm of it. He has to be a *sibling* of the
+   card, not a child — a negative-z child would paint beneath the card's own
+   background and disappear completely. The anchor itself paints no background,
+   so he still reads against the paper.
 
    Full-bleed too: he crosses the whole window, not the reading column he is
    nested inside. The negative offset is the standard break-out — 50% of the
    parent back to the viewport's left edge, then a full 100vw wide. */
+.wrobby-anchor { position: relative; }
 .wrobby-track {
   position: absolute;
-  top: calc(100% + var(--wrobby-drop, 0px));
+  inset: 0;
   left: calc(50% - 50vw);
+  display: flex;
+  align-items: center;
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
@@ -339,8 +347,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
 .how-when { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; }
 .how-step p { margin: .1rem 0 0; color: var(--ink-soft); font-size: .93rem; }
 
-/* Relative so Wrobby can hang off its bottom edge without taking up space. */
-.group-head { position: relative; display: flex; justify-content: space-between;
+.group-head { display: flex; justify-content: space-between;
   align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
 .code-pill {
   background: var(--sun); border: 2px solid var(--line-strong);
