@@ -123,6 +123,49 @@ Each step is a label plus a line of explanation.
 **Join button** — `web/js/views.js:58`
 > Join
 
+**Your name card title** — `web/js/views.js:75`
+> Your name
+
+**Your name card blurb** — `web/js/views.js:75`
+> What your groups call you on entries, guesses, and the standings.
+
+**Your name card hint** — `web/js/views.js:75`
+> You can use a different name in any single group ~ open that group to set it.
+
+---
+
+## 4a. Name cards (home and group)
+
+Shared by both name editors — `web/js/views.js:90-135`.
+
+**Save button**
+> Save
+
+**Reset button** — `${fallback}` is the name you'd drop back to
+> Use ${fallback}
+
+**Placeholder** — the empty input shows the name currently in effect
+> ${fallback}
+
+**Toast, name set**
+> You are now ${name}.
+
+**Toast, name cleared**
+> Back to ${fallback}.
+
+**Toast, nothing changed**
+> That is already your name.
+
+---
+
+## 4b. Your name in one group — `web/js/views.js:130`
+
+**Title** — `${group}` is the group's name
+> Your name in ${group}
+
+**Blurb**
+> Just here. Your other groups keep calling you what they already do.
+
 ---
 
 ## 5. Group header & phase bar
@@ -453,6 +496,14 @@ These surface inside the error screen or a toast.
 > keep prompts under 500 characters `(:280)`
 > You already suggested a prompt this week ~ one each. Yours: "${text}" `(:294)`
 > time travel is disabled `(:334)`
+
+Name errors — `worker/src/names.js` and `worker/src/index.js`
+
+> that is not a name
+> keep it to 32 characters or fewer
+> that name has characters that cannot be displayed
+> Someone in one of your groups already goes by "${name}". Pick something else, or set a different name just for that group.
+> Someone here already goes by "${name}".
 
 ---
 

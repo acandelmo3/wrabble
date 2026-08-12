@@ -5,6 +5,7 @@
 
 import { roundSchedule, lastOccurrence, nextOccurrence } from './time.js';
 import { scoreRound } from './scoring.js';
+import { nameSql } from './names.js';
 import * as discord from './discord.js';
 
 export const SEED_PROMPTS = [
@@ -244,20 +245,21 @@ export async function finalizeRound(db, group, round) {
 /** Per-author accuracy + standings, shared by the API and the Discord embed. */
 export async function revealPayload(db, group, round) {
   const results = await db.prepare(
-    `SELECT u.username AS author,
+    `SELECT ${nameSql('author', 'mem', 'u')},
             COUNT(g.guesser_id) AS attempts,
             SUM(CASE WHEN g.guessed_user_id = s.user_id THEN 1 ELSE 0 END) AS correct
        FROM submissions s
        JOIN users u ON u.id = s.user_id
+       LEFT JOIN memberships mem ON mem.user_id = u.id AND mem.group_id = ?2
        LEFT JOIN guesses g
          ON g.submission_id = s.id AND g.guesser_id != s.user_id
       WHERE s.round_id = ?1
       GROUP BY s.id
       ORDER BY correct ASC`,
-  ).bind(round.id).all();
+  ).bind(round.id, group.id).all();
 
   const leaderboard = await db.prepare(
-    `SELECT u.username AS name,
+    `SELECT ${nameSql('name')},
             COALESCE(SUM(rs.points), 0) AS total,
             COALESCE(SUM(CASE WHEN rs.round_id = ?2 THEN rs.points ELSE 0 END), 0) AS round_points
        FROM memberships m
@@ -277,9 +279,12 @@ export async function revealPayload(db, group, round) {
 
   let promptAuthor = null;
   if (round.prompt_author_id) {
-    const a = await db.prepare(`SELECT username FROM users WHERE id = ?1`)
-      .bind(round.prompt_author_id).first();
-    promptAuthor = a?.username || null;
+    const a = await db.prepare(
+      `SELECT ${nameSql('name')} FROM users u
+         LEFT JOIN memberships m ON m.user_id = u.id AND m.group_id = ?2
+        WHERE u.id = ?1`,
+    ).bind(round.prompt_author_id, group.id).first();
+    promptAuthor = a?.name || null;
   }
 
   return {

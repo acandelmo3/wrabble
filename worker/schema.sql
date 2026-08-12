@@ -5,8 +5,9 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS users (
   id           TEXT PRIMARY KEY,            -- discord user id
-  username     TEXT NOT NULL,
-  global_name  TEXT,
+  username     TEXT NOT NULL,               -- from discord, overwritten on login
+  global_name  TEXT,                        -- from discord, overwritten on login
+  display_name TEXT,                        -- chosen here; wins over both, all groups
   avatar       TEXT,
   created_at   INTEGER NOT NULL
 );
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS memberships (
   group_id   TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role       TEXT NOT NULL DEFAULT 'member',  -- 'owner' | 'member'
+  nickname   TEXT,                            -- chosen here; wins in this group only
   joined_at  INTEGER NOT NULL,
   PRIMARY KEY (group_id, user_id)
 );

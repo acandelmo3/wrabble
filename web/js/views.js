@@ -63,7 +63,66 @@ export function homeView(me, onRefresh) {
         onRefresh();
       }),
     ),
+
+    nameCard({
+      title: 'Your name',
+      blurb: 'What your groups call you on entries, guesses, and the standings.',
+      value: me.user.display_name,
+      fallback: me.user.discord_name,
+      hint: 'You can use a different name in any single group ~ open that group to set it.',
+      onSave: async (v) => { await api.setDisplayName(v); onRefresh(); },
+    }),
   );
+}
+
+// ------------------------------------------------------------------- names
+
+const MAX_NAME = 32;
+
+/**
+ * Edit a name. Used twice: once for your name everywhere (home), once for the
+ * name you use in one group. Blank saves as "clear it", which is why the
+ * placeholder shows what you'd fall back to rather than just being decorative.
+ */
+function nameCard({ title, blurb, value, fallback, hint, onSave }) {
+  const input = h('input', {
+    class: 'input',
+    value: value || '',
+    placeholder: fallback,
+    maxLength: MAX_NAME,
+    'aria-label': title,
+  });
+  const btn = h('button', { class: 'btn btn-primary btn-sm', type: 'submit' }, 'Save');
+
+  // Only offer the reset when there is something to reset to.
+  const clear = value
+    ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Use ' + fallback)
+    : null;
+  if (clear) {
+    clear.addEventListener('click', () => { input.value = ''; form.requestSubmit(); });
+  }
+
+  const form = h('form', {
+    class: 'card form-card',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      const next = input.value.trim();
+      if (next === (value || '')) return toast('That is already your name.', 'info');
+      btn.disabled = true;
+      try {
+        await onSave(next);
+        toast(next ? `You are now ${next}.` : `Back to ${fallback}.`, 'success');
+      } catch (err) { toast(err.message, 'error'); }
+      finally { btn.disabled = false; }
+    },
+  },
+    h('h3', {}, title),
+    blurb ? h('p', { class: 'muted' }, blurb) : null,
+    input,
+    h('div', { class: 'row' }, btn, clear),
+    hint ? h('p', { class: 'hint' }, hint) : null);
+
+  return form;
 }
 
 function formCard(title, label, placeholder, cta, onSubmit) {
@@ -117,6 +176,15 @@ export function groupView(data, refresh) {
   if (round.phase === 'revealed') body.append(revealedPanel(data, refresh));
 
   body.append(leaderboardCard(leaderboard, me));
+  body.append(nameCard({
+    title: `Your name in ${group.name}`,
+    blurb: 'Just here. Your other groups keep calling you what they already do.',
+    value: me.nickname,
+    // Falls back to the overall name, not the Discord one ~ that is what
+    // clearing this actually leaves you with.
+    fallback: me.display_name || me.discord_name,
+    onSave: async (v) => { await api.setNickname(group.id, v); refresh(); },
+  }));
   return body;
 }
 

@@ -21,6 +21,30 @@ so there's a bonus round: **who wrote the prompt?**
 
 Every one of those times is per-group configurable (day + hour + timezone).
 
+## Names
+
+You sign in with Discord, but you are not stuck with your Discord name. Set one
+name that applies everywhere, and optionally a different one inside any single
+group ~ handy when one group knows you by something the others don't.
+
+The order of preference, most specific first:
+
+| | Set where |
+|---|---|
+| Your name in this group | the group page |
+| Your name everywhere | the home page |
+| Discord display name | Discord |
+| Discord handle | Discord |
+
+Clearing a name falls through to the next one down, so there is always
+something to render. Names are capped at 32 characters and must be unique
+within a group, ignoring case ~ two players called "Sam" would make the
+guessing dropdown impossible to read and the reveal impossible to follow.
+
+Renaming is not retroactive-safe by accident, it's retroactive on purpose: past
+weeks re-render under your current name, so the history never shows a name
+nobody recognizes.
+
 ## Scoring
 
 | | Points |
@@ -83,6 +107,20 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 npx wrangler secret put SESSION_SECRET   # any long random string
 npx wrangler deploy
 ```
+
+### Migrations
+
+`schema.sql` is `CREATE TABLE IF NOT EXISTS` throughout, so it builds a new
+database but does nothing to one that already has the tables. Anything that
+changes an existing table gets a numbered file in `worker/migrations/`, applied
+once, oldest first:
+
+```bash
+npx wrangler d1 execute wrabble --remote --file=./migrations/001-custom-names.sql
+```
+
+Local databases need the same treatment ~ swap `--remote` for
+`--local --env dev`.
 
 ### 3. Web app
 

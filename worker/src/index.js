@@ -2,6 +2,9 @@ import { signToken, verifyToken, oauthRedirectUrl, exchangeCode } from './auth.j
 import {
   advanceGroup, currentRound, startRound, revealPayload, uid, now, SEED_PROMPTS,
 } from './rounds.js';
+import {
+  nameSql, globalNameSql, globalName, cleanName, findNameConflict, MAX_NAME,
+} from './names.js';
 
 const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
   status,
@@ -41,7 +44,7 @@ async function requireUser(request, env) {
 
 async function requireMember(env, groupId, userId) {
   const row = await env.DB.prepare(
-    `SELECT g.*, m.role FROM groups g
+    `SELECT g.*, m.role, m.nickname FROM groups g
        JOIN memberships m ON m.group_id = g.id AND m.user_id = ?2
       WHERE g.id = ?1`,
   ).bind(groupId, userId).first();
@@ -55,8 +58,19 @@ const inviteCode = () => {
   return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
 };
 
+/**
+ * A user as the client sees them. `username` is whatever they should be
+ * *called* here; `discord_name` is what Discord calls them, so the settings
+ * screen can show what clearing a custom name would fall back to.
+ *
+ * Rows selected inside a group carry a `name` column from `nameSql()` and so
+ * pick up that group's nickname; rows without one fall back to the overall name.
+ */
 const publicUser = (u) => ({
-  id: u.id, username: u.global_name || u.username, avatar: u.avatar,
+  id: u.id,
+  username: u.name || globalName(u),
+  discord_name: u.global_name || u.username,
+  avatar: u.avatar,
 });
 
 // ---------------------------------------------------------------- routes
@@ -131,14 +145,39 @@ async function handle(request, env, ctx) {
     return Response.redirect(`${dest}#token=${encodeURIComponent(token)}`, 302);
   }
 
-  if (path === '/api/me') {
+  if (path === '/api/me' && method === 'GET') {
     const user = await requireUser(request, env);
     const groups = await env.DB.prepare(
-      `SELECT g.id, g.name, g.invite_code FROM groups g
+      `SELECT g.id, g.name, g.invite_code, m.nickname FROM groups g
          JOIN memberships m ON m.group_id = g.id
         WHERE m.user_id = ?1 ORDER BY g.created_at`,
     ).bind(user.id).all();
-    return json({ user: publicUser(user), groups: groups.results || [] });
+    return json({
+      user: { ...publicUser(user), display_name: user.display_name || null },
+      groups: groups.results || [],
+    });
+  }
+
+  // PUT /api/me — your name everywhere. Empty clears it back to Discord's.
+  if (path === '/api/me' && method === 'PUT') {
+    const user = await requireUser(request, env);
+    let name;
+    try { name = cleanName(body.display_name); }
+    catch (err) { bad(err.message); }
+
+    // Checked against every group they are in: clearing a custom name can
+    // collide too, by exposing a Discord name someone else already answers to.
+    const effective = name || (user.global_name || user.username);
+    const clash = await findNameConflict(env.DB, user.id, effective);
+    if (clash) {
+      throw new HttpError(409,
+        `Someone in one of your groups already goes by "${clash}". `
+        + 'Pick something else, or set a different name just for that group.');
+    }
+
+    await env.DB.prepare(`UPDATE users SET display_name = ?1 WHERE id = ?2`)
+      .bind(name || null, user.id).run();
+    return json({ ok: true, display_name: name || null, username: name || effective });
   }
 
   // ---- groups ----
@@ -183,6 +222,25 @@ async function handle(request, env, ctx) {
     const user = await requireUser(request, env);
     const group = await requireMember(env, m[1], user.id);
     return json(await groupView(env, group, user));
+  }
+
+  // PUT /api/groups/:id/nickname — what you are called in this group only.
+  // Any member, for themselves; empty falls back to your overall name.
+  if ((m = path.match(/^\/api\/groups\/([\w-]+)\/nickname$/)) && method === 'PUT') {
+    const user = await requireUser(request, env);
+    const group = await requireMember(env, m[1], user.id);
+    let name;
+    try { name = cleanName(body.nickname); }
+    catch (err) { bad(err.message); }
+
+    const effective = name || globalName(user);
+    const clash = await findNameConflict(env.DB, user.id, effective, group.id);
+    if (clash) throw new HttpError(409, `Someone here already goes by "${clash}".`);
+
+    await env.DB.prepare(
+      `UPDATE memberships SET nickname = ?1 WHERE group_id = ?2 AND user_id = ?3`,
+    ).bind(name || null, group.id, user.id).run();
+    return json({ ok: true, nickname: name || null, username: effective });
   }
 
   // PUT /api/groups/:id/settings — owner only.
@@ -314,17 +372,19 @@ async function handle(request, env, ctx) {
     ).bind(group.id).all();
     const out = [];
     for (const r of rounds.results || []) {
+      // LEFT JOIN on memberships: someone who has since left the group still
+      // wrote the entry, and their name should keep showing on it.
       const subs = await env.DB.prepare(
-        `SELECT s.body, u.username, u.global_name FROM submissions s
-           JOIN users u ON u.id = s.user_id WHERE s.round_id = ?1`,
-      ).bind(r.id).all();
+        `SELECT s.body, ${nameSql('name')} FROM submissions s
+           JOIN users u ON u.id = s.user_id
+           LEFT JOIN memberships m ON m.user_id = u.id AND m.group_id = ?2
+          WHERE s.round_id = ?1`,
+      ).bind(r.id, group.id).all();
       out.push({
         week_index: r.week_index,
         prompt: r.prompt_text,
         reveals_at: r.reveals_at,
-        entries: (subs.results || []).map((s) => ({
-          author: s.global_name || s.username, body: s.body,
-        })),
+        entries: (subs.results || []).map((s) => ({ author: s.name, body: s.body })),
       });
     }
     return json({ rounds: out });
@@ -374,12 +434,13 @@ async function groupView(env, group, user) {
   const round = await currentRound(db, group.id);
 
   const membersRes = await db.prepare(
-    `SELECT u.* FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.group_id = ?1`,
+    `SELECT u.*, ${nameSql('name')} FROM memberships m
+       JOIN users u ON u.id = m.user_id WHERE m.group_id = ?1`,
   ).bind(group.id).all();
   const members = (membersRes.results || []).map(publicUser);
 
   const leaderboardRes = await db.prepare(
-    `SELECT u.id, u.username, u.global_name, COALESCE(SUM(rs.points), 0) AS total
+    `SELECT u.id, ${nameSql('name')}, COALESCE(SUM(rs.points), 0) AS total
        FROM memberships m
        JOIN users u ON u.id = m.user_id
        LEFT JOIN (
@@ -398,10 +459,16 @@ async function groupView(env, group, user) {
       close_dow: group.close_dow, close_hour: group.close_hour,
       reveal_dow: group.reveal_dow, reveal_hour: group.reveal_hour,
     },
-    me: publicUser(user),
+    // Your own entry in `members` already carries this group's nickname, so
+    // take it from there rather than re-deriving it from the bare users row.
+    me: {
+      ...(members.find((mem) => mem.id === user.id) || publicUser(user)),
+      nickname: group.nickname || null,
+      display_name: user.display_name || null,
+    },
     members,
     leaderboard: (leaderboardRes.results || []).map((r) => ({
-      id: r.id, username: r.global_name || r.username, total: r.total,
+      id: r.id, username: r.name, total: r.total,
     })),
     server_time: now(),
   };

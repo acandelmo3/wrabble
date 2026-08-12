@@ -54,6 +54,8 @@ async function req(method, path, body) {
 
 export const api = {
   me: () => req('GET', '/api/me'),
+  setDisplayName: (name) => req('PUT', '/api/me', { display_name: name }),
+  setNickname: (groupId, name) => req('PUT', `/api/groups/${groupId}/nickname`, { nickname: name }),
   group: (id) => req('GET', `/api/groups/${id}`),
   history: (id) => req('GET', `/api/groups/${id}/history`),
   createGroup: (name, tz) => req('POST', '/api/groups', { name, tz }),
