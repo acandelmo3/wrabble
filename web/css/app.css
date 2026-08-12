@@ -270,13 +270,23 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
    keyframes stop running, and without it he would have no frame at all. */
 /* Declared on the outer element so the inner animations can all read them — a
    custom property set on `.wrobby` would be invisible to its own ancestors. */
-/* Full-bleed: he crosses the whole window, not the reading column he is
-   nested inside. The negative margin is the standard break-out — 50% of the
+/* Out of flow and underneath. He hangs off the bottom of the group header, so
+   nothing below him moves down to make room and the phase bar sits where it
+   always did. `z-index: -1` puts him behind the cards — he vanishes behind the
+   phase bar and reappears in the gaps, which is the whole charm of it. Nothing
+   above him in the tree sets a background, so he still reads against the paper.
+
+   Full-bleed too: he crosses the whole window, not the reading column he is
+   nested inside. The negative offset is the standard break-out — 50% of the
    parent back to the viewport's left edge, then a full 100vw wide. */
 .wrobby-track {
+  position: absolute;
+  top: calc(100% + var(--wrobby-drop, 0px));
+  left: calc(50% - 50vw);
+  z-index: -1;
+  pointer-events: none;
   overflow: hidden;
   width: 100vw;
-  margin-left: calc(50% - 50vw);
   --wrobby-cycle: 1.5s;  /* three frames at 2 fps */
   --wrobby-step: 58px;   /* ground covered per cycle */
   /* Deliberately far more ground than the window is wide: he is an occasional
@@ -329,7 +339,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
 .how-when { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; }
 .how-step p { margin: .1rem 0 0; color: var(--ink-soft); font-size: .93rem; }
 
-.group-head { display: flex; justify-content: space-between;
+/* Relative so Wrobby can hang off its bottom edge without taking up space. */
+.group-head { position: relative; display: flex; justify-content: space-between;
   align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
 .code-pill {
   background: var(--sun); border: 2px solid var(--line-strong);
