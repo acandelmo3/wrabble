@@ -100,12 +100,10 @@ export function notesView() {
     h('h1', {}, 'Patch notes'),
     h('p', { class: 'muted' }, 'What changed, newest first.'),
     ...NOTES.map((n) => h('section', { class: 'card' },
-      h('div', { class: 'row space-between' },
-        h('h3', {}, n.title),
-        // An entry with no date has not shipped yet. Say so rather than
-        // leaving a gap where every other entry has a date.
-        h('span', { class: n.date ? 'muted' : 'tag' },
-          n.date ? releaseDate(n.date) : 'Coming next')),
+      // Version and date read as one title. An entry with no date has not
+      // shipped, so it says so rather than leaving a gap where the others
+      // carry a date.
+      h('h3', {}, `${n.title} ~ ${n.date ? releaseDate(n.date) : 'coming next'}`),
       n.text ? h('p', {}, n.text) : null,
       ...section('Added', n.added),
       ...section('Changed', n.changed),

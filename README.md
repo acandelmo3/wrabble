@@ -31,10 +31,13 @@ The order of preference, most specific first:
 
 | | Set where |
 |---|---|
-| Your name in this group | the group page |
+| Your name in this group | that group's **Settings** |
 | Your name everywhere | the home page |
 | Discord display name | Discord |
 | Discord handle | Discord |
+
+Settings is open to every member for this reason ~ the schedule and webhook
+sections inside it stay owner-only, and the API refuses them from anyone else.
 
 Clearing a name falls through to the next one down, so there is always
 something to render. Names are capped at 32 characters and must be unique
@@ -44,6 +47,18 @@ guessing dropdown impossible to read and the reveal impossible to follow.
 Renaming is not retroactive-safe by accident, it's retroactive on purpose: past
 weeks re-render under your current name, so the history never shows a name
 nobody recognizes.
+
+## Patch notes
+
+Players get a **Patch notes** button on the home page, reading from
+[`web/js/notes.js`](web/js/notes.js). That file is the player-facing copy;
+[`PATCHNOTES.md`](PATCHNOTES.md) is the repo's changelog and stays canonical.
+Adding an entry means editing both ~ they are not generated from each other,
+because `web/` ships as plain ES modules with no build step and a markdown
+parser is a lot of machinery for a list of sentences.
+
+An entry with no `date` renders as "coming next", so unreleased work can sit
+there openly until it ships.
 
 ## Scoring
 
@@ -178,58 +193,6 @@ The last one seeds fake players and prints a sign-in link for each. Open one per
 browser profile (a normal window plus a private window is enough for two) and
 you can play a whole group by yourself. Pass names to get more: `npm run players
 ann bo cy dee`.
-
-### Running it on the homelab, over Tailscale
-
-The whole dev stack can live on the homelab and be reached from any device on
-the tailnet ~ handy for testing on a phone, or for letting someone else poke at
-a change before it ships.
-
-On the homelab, with the repo checked out and `npm install` done:
-
-```bash
-cd worker && npm run db:local
-npx wrangler d1 execute wrabble --local --env dev --file=./migrations/001-custom-names.sql
-npm run dev:lan
-```
-
-```bash
-cd web && python3 serve.py
-```
-
-`dev:lan` is the ordinary dev server bound to `0.0.0.0` instead of loopback;
-without it nothing off the box can reach the API. `serve.py` already listens on
-every interface.
-
-Then from any tailnet device: **http://homelab.tailc96b88.ts.net:5173**
-
-The web app works out which Worker to talk to from the URL it was loaded from,
-so there is nothing per-machine to edit. Only the published GitHub Pages host
-talks to the deployed Worker; everything else expects a Worker on the same host
-it came from. Adding a new dev hostname means adding its origin to
-`ALLOWED_ORIGINS` under `[env.dev.vars]`, or the browser will refuse the API
-calls.
-
-#### With HTTPS
-
-Plain http over the tailnet is fine, with one wart: `navigator.clipboard` needs
-a secure context, so the copy-the-invite-code button falls back to
-select-and-press-Ctrl+C. `tailscale serve` fixes that by giving the box a real
-certificate:
-
-```bash
-tailscale serve --bg --https=443 http://127.0.0.1:5173
-tailscale serve --bg --https=8443 http://127.0.0.1:8787
-```
-
-Then use **https://homelab.tailc96b88.ts.net**. The 8443 port for the API is
-not arbitrary ~ `web/js/config.js` looks for it whenever the page arrives over
-https. This needs HTTPS certificates enabled for the tailnet in the Tailscale
-admin console; `tailscale serve status` will say if it isn't.
-
-Either way this stays inside the tailnet. `tailscale funnel` would expose it to
-the open internet, which a dev server with `ALLOW_TIME_TRAVEL=true` and
-unauthenticated seed logins has no business being.
 
 ### Skipping ahead
 
