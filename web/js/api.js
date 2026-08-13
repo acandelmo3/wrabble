@@ -66,4 +66,6 @@ export const api = {
     req('POST', `/api/rounds/${roundId}/guesses`, { guesses, prompt_author: promptAuthor }),
   suggestPrompt: (groupId, text) => req('POST', `/api/groups/${groupId}/prompts`, { text }),
   advance: (groupId, to) => req('POST', `/api/groups/${groupId}/advance`, { to }),
+  react: (submissionId, face) =>
+    req('POST', `/api/submissions/${submissionId}/reactions`, { face }),
 };

@@ -5,6 +5,7 @@ import {
 import {
   nameSql, globalNameSql, globalName, cleanName, findNameConflict, MAX_NAME,
 } from './names.js';
+import { FACES, isFace, reactionsForRound } from './reactions.js';
 
 const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
   status,
@@ -362,6 +363,41 @@ async function handle(request, env, ctx) {
     return json({ ok: true });
   }
 
+  // POST /api/submissions/:id/reactions — toggle one of Wrobby's faces.
+  //
+  // Reveal only. During writing there is nothing to react to, and during
+  // guessing the entries are deliberately anonymous ~ letting people react then
+  // would turn the reaction bar into a side channel for discussing who wrote
+  // what, which is the one thing the guessing phase is trying to prevent.
+  if ((m = path.match(/^\/api\/submissions\/([\w-]+)\/reactions$/)) && method === 'POST') {
+    const user = await requireUser(request, env);
+    const sub = await env.DB.prepare(
+      `SELECT s.id, s.user_id, r.id AS round_id, r.group_id, r.phase
+         FROM submissions s JOIN rounds r ON r.id = s.round_id
+        WHERE s.id = ?1`,
+    ).bind(m[1]).first();
+    if (!sub) missing('entry not found');
+    await requireMember(env, sub.group_id, user.id);
+    if (sub.phase !== 'revealed') forbid('reactions open once the week is revealed');
+    if (!isFace(body.face)) bad('that is not one of Wrobby\'s faces');
+
+    // Toggle: the primary key makes "already there" the delete case, so a
+    // double tap removes rather than erroring or silently stacking.
+    const del = await env.DB.prepare(
+      `DELETE FROM reactions WHERE submission_id = ?1 AND user_id = ?2 AND face = ?3`,
+    ).bind(sub.id, user.id, body.face).run();
+    const removed = (del.meta?.changes || 0) > 0;
+    if (!removed) {
+      await env.DB.prepare(
+        `INSERT INTO reactions (submission_id, user_id, face, created_at)
+         VALUES (?1, ?2, ?3, ?4)`,
+      ).bind(sub.id, user.id, body.face, now()).run();
+    }
+
+    const all = await reactionsForRound(env.DB, sub.round_id, user.id);
+    return json({ ok: true, on: !removed, reactions: all[sub.id] || { counts: {}, mine: [] } });
+  }
+
   // GET /api/groups/:id/history — past rounds, fully revealed.
   if ((m = path.match(/^\/api\/groups\/([\w-]+)\/history$/)) && method === 'GET') {
     const user = await requireUser(request, env);
@@ -550,6 +586,7 @@ async function groupView(env, group, user) {
 
   // revealed
   const reveal = await revealPayload(db, group, round);
+  const reacts = await reactionsForRound(db, round.id, user.id);
   const scoresRes = await db.prepare(
     `SELECT user_id, points, breakdown FROM round_scores WHERE round_id = ?1`,
   ).bind(round.id).all();
@@ -567,7 +604,11 @@ async function groupView(env, group, user) {
         author: byUser.get(e.user_id) || 'unknown',
         my_guess: myGuesses[e.id] || null,
         my_guess_correct: myGuesses[e.id] ? myGuesses[e.id] === e.user_id : null,
+        reactions: reacts[e.id]?.counts || {},
+        my_reactions: reacts[e.id]?.mine || [],
       })),
+      // The client renders whatever this says rather than hardcoding the set.
+      reaction_faces: FACES,
       prompt_author_id: round.prompt_author_id,
       prompt_author: reveal.promptAuthor,
       my_prompt_guess: myPromptGuess?.guessed_user_id || null,

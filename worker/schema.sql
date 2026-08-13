@@ -106,6 +106,19 @@ CREATE TABLE IF NOT EXISTS round_scores (
   PRIMARY KEY (round_id, user_id)
 );
 
+-- Wrobby reactions on revealed entries. One row per (entry, player, face), so
+-- the primary key is the "one of each face per person" rule and toggling off is
+-- a DELETE on the same key. Face values are validated at the API against
+-- src/reactions.js, not here ~ retiring a face must not orphan old rows.
+CREATE TABLE IF NOT EXISTS reactions (
+  submission_id TEXT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  face          TEXT NOT NULL,
+  created_at    INTEGER NOT NULL,
+  PRIMARY KEY (submission_id, user_id, face)
+);
+CREATE INDEX IF NOT EXISTS idx_reactions_submission ON reactions(submission_id);
+
 -- Idempotency guard so cron retries never double-post to Discord.
 CREATE TABLE IF NOT EXISTS notifications (
   round_id  TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,

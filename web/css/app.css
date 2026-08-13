@@ -248,6 +248,50 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1.5deg); } }
 .art-float { animation: bob 5.5s ease-in-out infinite; }
 
+/* --- Wrobby reactions ---
+   A reaction is a pill: one of his faces plus a count. It sits on the entry
+   card and takes the card's paper, so it needs no surface of its own.
+
+   The faces are 30px and not smaller on purpose. Below about 30 the
+   expressions stop being readable ~ they collapse into a green blob with
+   dots ~ and the whole feature turns decorative. Whatever else changes here,
+   that floor should not. */
+.reacts {
+  display: flex; gap: .4rem; flex-wrap: wrap; align-items: center;
+  margin-top: .9rem; padding-top: .8rem;
+  border-top: 2px dashed var(--line);
+}
+.react {
+  display: inline-flex; align-items: center; gap: .32rem;
+  background: var(--paper-2); border: 2px solid var(--line-strong);
+  border-radius: 999px; padding: .16rem .5rem .16rem .28rem;
+  font-family: var(--font-body); font-weight: 700; font-size: .82rem;
+  color: var(--ink); cursor: pointer; line-height: 1;
+  transition: transform .12s ease;
+}
+.react:hover { transform: translateY(-2px) rotate(-1.5deg); }
+.react:disabled { opacity: .55; cursor: default; transform: none; }
+.react img { width: 30px; height: 30px; display: block; }
+/* Yours read as pressed rather than merely tinted, so the state does not
+   depend on telling two warm colours apart. */
+.react.on { background: var(--sun); box-shadow: 2px 2px 0 var(--shadow-ink); }
+.react-add {
+  border-style: dashed; background: transparent; color: var(--ink-soft);
+  padding: .28rem .6rem; font-size: .95rem;
+}
+.react-tray {
+  display: flex; gap: .3rem; flex-wrap: wrap; align-items: center;
+  background: var(--surface); border: 2.5px solid var(--line-strong);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: .4rem; margin-top: .6rem; width: max-content; max-width: 100%;
+}
+.react-tray button {
+  background: none; border: 0; padding: .18rem; border-radius: 10px;
+  cursor: pointer; line-height: 0; transition: transform .12s ease;
+}
+.react-tray button:hover { background: var(--paper-2); transform: scale(1.12); }
+.react-tray img { width: 42px; height: 42px; display: block; }
+
 /* --- Wrobby ---
    Three drawings run as a sawtooth: extended, mid, arch, back to extended.
    1-2-3 is one continuous scrunch — in the drawings the head stays planted and
