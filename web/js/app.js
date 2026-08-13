@@ -4,8 +4,12 @@ import {
   landingView, homeView, groupView, historyView, settingsView, notesView, errorView,
 } from './views.js';
 import * as art from './art.js';
+import { isDirty, pruneDrafts } from './drafts.js';
 
 let me = null;
+
+// One dead key per finished week otherwise.
+pruneDrafts();
 
 // Day <-> evening. The inline script in index.html sets the initial value
 // before first paint; this only handles deliberate switches.
@@ -93,4 +97,22 @@ router();
 
 // The phase can flip while a tab sits open (Thursday 8pm arrives). Re-checking
 // on focus means someone who left the tab up doesn't act on a stale phase.
-addEventListener('focus', () => { if (getToken()) router(); });
+//
+// But re-checking means re-mounting, and re-mounting used to throw away
+// whatever was in the textarea: alt-tabbing to look something up destroyed a
+// long answer outright. The draft is saved to localStorage now, so nothing is
+// lost either way ~ this just declines to yank the page out from under someone
+// mid-sentence. The write itself is still guarded at the API, which refuses a
+// submission once the round has closed.
+addEventListener('focus', () => {
+  if (!getToken() || isDirty()) return;
+  router();
+});
+
+// Closing the tab with unsaved work prompts. The draft would survive it, but a
+// silent discard still reads as lost writing.
+addEventListener('beforeunload', (e) => {
+  if (!isDirty()) return;
+  e.preventDefault();
+  e.returnValue = '';
+});

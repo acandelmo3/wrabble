@@ -1,6 +1,7 @@
 import { h, fmtDate, countdown, wordCount, toast, codePill } from './dom.js';
 import { api, login, logout } from './api.js';
 import { NOTES } from './notes.js';
+import { loadDraft, saveDraft, clearDraft, touchDraft, setDirty } from './drafts.js';
 import * as art from './art.js';
 
 const DOWS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -295,18 +296,38 @@ function writingPanel(data, refresh) {
       suggestCard(data));
   }
 
+  // A local draft outranks the saved entry: it is by definition the newer of
+  // the two, since it only exists while there are edits the server has not
+  // taken yet.
+  const saved = round.my_submission || '';
+  const draft = loadDraft(round.id);
+  const restored = draft !== null && draft !== saved;
+
   const ta = h('textarea', {
     class: 'textarea',
     placeholder: 'Write anything. 10 letters, 10 pages, or anywhere in between.',
     rows: 14,
-    value: round.my_submission || '',
+    value: restored ? draft : saved,
   });
+
   const counter = h('span', { class: 'muted' });
+  const note = h('p', { class: 'hint' }, restored
+    ? 'Restored what you had unsaved. It is not submitted yet ~ hit the button below.'
+    : '');
   const update = () => {
     counter.textContent = `${wordCount(ta.value)} words · ${ta.value.length} characters`;
   };
-  ta.addEventListener('input', update);
+  ta.addEventListener('input', () => {
+    update();
+    // Every keystroke, deliberately. Debouncing here would reintroduce the
+    // window where a draft exists only in the DOM.
+    saveDraft(round.id, ta.value);
+    touchDraft(round.id);
+    setDirty(ta.value !== saved);
+    note.textContent = '';
+  });
   update();
+  setDirty(restored);
 
   const save = h('button', { class: 'btn btn-primary' },
     round.my_submission ? 'Update my entry' : 'Submit my entry');
@@ -315,6 +336,9 @@ function writingPanel(data, refresh) {
     save.disabled = true;
     try {
       await api.submit(round.id, ta.value);
+      // Only now is the draft redundant. Clearing it any earlier ~ optimistically,
+      // or before the await ~ would throw the text away on a failed save.
+      clearDraft(round.id);
       toast('Saved. You can keep editing until the cutoff.', 'success');
       refresh();
     } catch (err) { toast(err.message, 'error'); }
@@ -329,6 +353,7 @@ function writingPanel(data, refresh) {
           art.art(art.quill, 'art-tile'), h('h3', {}, 'Your answer')),
         round.my_submission ? h('span', { class: 'tag tag-ok' }, 'Submitted') : null),
       ta,
+      note,
       h('div', { class: 'row space-between' }, counter, save)),
     h('p', { class: 'muted center' },
       `${round.submission_count} of ${data.members.length} in so far. `,
@@ -588,7 +613,10 @@ export function historyView(groupId, data) {
         h('blockquote', {}, r.prompt),
         ...r.entries.map((e) => h('details', { class: 'past-entry' },
           h('summary', {}, e.author),
-          h('div', { class: 'entry-body' }, e.body)))))
+          h('div', { class: 'entry-body' }, e.body),
+          // Still live: any revealed week accepts reactions, so an entry can
+          // pick some up long after its Sunday.
+          reactionBar(e, data.reaction_faces || [], () => {})))))
       : [h('div', { class: 'center-col stack' },
           art.art(art.teacup, 'art-hero'),
           h('p', { class: 'muted' }, 'Nothing revealed yet ~ come back after your first Sunday.'))]),
