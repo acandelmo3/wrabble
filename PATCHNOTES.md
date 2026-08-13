@@ -14,8 +14,7 @@ if a line only matters to whoever deploys it, it belongs in the README instead.
 
 - **React to entries with Wrobby's face.** Once the week is revealed, leave a
   reaction on anyone's entry ~ happy, love, gasp, sad, flustered, deadpan or
-  dizzy. Tap one again to take it back. Reactions stay shut until the reveal, so
-  nobody can use them to hint at who wrote what while guessing is still open.
+  dizzy.
 
 ---
 
