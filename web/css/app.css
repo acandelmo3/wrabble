@@ -285,6 +285,10 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
   border-radius: var(--radius); box-shadow: var(--shadow);
   padding: .4rem; margin-top: .6rem; width: max-content; max-width: 100%;
 }
+/* The tray opens only on the + button. This rule is what makes that true: a
+   `display` on the class outranks the browser's own [hidden] { display: none },
+   so without it the hidden attribute is set and does nothing at all. */
+.react-tray[hidden] { display: none; }
 .react-tray button {
   background: none; border: 0; padding: .18rem; border-radius: 10px;
   cursor: pointer; line-height: 0; transition: transform .12s ease;
