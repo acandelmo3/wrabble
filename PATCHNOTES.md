@@ -8,7 +8,7 @@ if a line only matters to whoever deploys it, it belongs in the README instead.
 
 ---
 
-## Unreleased ~ launch week 2
+## 2026-08-13 ~ launch week 2
 
 ### Added
 
