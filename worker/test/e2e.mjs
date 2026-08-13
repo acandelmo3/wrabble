@@ -224,6 +224,50 @@ check('leaderboard sorted desc',
   view.leaderboard.every((r, i, a) => i === 0 || a[i - 1].total >= r.total),
   view.leaderboard.map((r) => `${r.username}:${r.total}`).join(' '));
 
+console.log('\n— reactions —');
+const target = byAuthor.alice;
+// sid is explicit, never defaulted: an undefined id silently falling back to
+// some other entry turns a failed guard into a passing test.
+const react = (u, face, sid) =>
+  call(u, 'POST', `/api/submissions/${sid}/reactions`, { face });
+
+check('reveal ships the face list', Array.isArray(view.round.reaction_faces)
+  && view.round.reaction_faces.includes('happy'),
+  JSON.stringify(view.round.reaction_faces));
+
+const r1 = await react(users[1], 'happy', target);
+check('a member can react', r1.status === 200 && r1.data.on === true, JSON.stringify(r1.data));
+check('count comes back with it', r1.data.reactions.counts.happy === 1);
+
+// Same face twice is a toggle, not a stack ~ this is the primary key doing it.
+const r2 = await react(users[1], 'happy', target);
+check('the same face again removes it', r2.status === 200 && r2.data.on === false,
+  JSON.stringify(r2.data.reactions.counts));
+
+await react(users[1], 'happy', target);
+const r3 = await react(users[2], 'happy', target);
+check('two people stack on one face', r3.data.reactions.counts.happy === 2);
+const r4 = await react(users[1], 'love', target);
+check('one person can leave several faces', r4.data.reactions.counts.love === 1
+  && r4.data.reactions.counts.happy === 2, JSON.stringify(r4.data.reactions.counts));
+check('mine lists only my own', r4.data.reactions.mine.sort().join(',') === 'happy,love',
+  JSON.stringify(r4.data.reactions.mine));
+
+const badFace = await react(users[1], 'angry', target);
+check('a face outside the set is refused', badFace.status === 400, JSON.stringify(badFace.data));
+const noEntry = await call(users[1], 'POST', '/api/submissions/nope/reactions', { face: 'happy' });
+check('an unknown entry is refused', noEntry.status === 404, JSON.stringify(noEntry.data));
+const stranger = await react(outsider, 'happy', target);
+check('SECRECY: a non-member cannot react', stranger.status === 404, JSON.stringify(stranger.data));
+
+view = (await call(users[0], 'GET', `/api/groups/${gid}`)).data;
+const reacted = view.round.entries.find((e) => e.id === target);
+check('reactions ride along on the round payload',
+  reacted.reactions.happy === 2 && reacted.reactions.love === 1,
+  JSON.stringify(reacted.reactions));
+check('alice sees none of them as hers', reacted.my_reactions.length === 0,
+  JSON.stringify(reacted.my_reactions));
+
 console.log('\n— next week rolls over —');
 const roll = await call(users[0], 'POST', `/api/groups/${gid}/advance`, { to: 'next' });
 check('rollover ran', roll.status === 200, JSON.stringify(roll.data.log));
@@ -239,11 +283,27 @@ view = (await call(users[0], 'GET', `/api/groups/${gid}`)).data;
 check('SECRECY: week 2 hides entries again',
   view.round.phase === 'writing' && view.round.entries === undefined,
   `phase ${view.round.phase}`);
+for (const u of users) {
+  await call(u, 'PUT', `/api/rounds/${view.round.id}/submission`, { body: `${u.name} week two` });
+}
 check('standings carried over', view.leaderboard.reduce((a, b) => a + b.total, 0) === 18,
   `total ${view.leaderboard.reduce((a, b) => a + b.total, 0)}`);
 
 const hist = await call(users[0], 'GET', `/api/groups/${gid}/history`);
 check('history shows week 1 with authors', hist.data.rounds?.[0]?.entries?.length === 3);
+
+// A finished week keeps taking reactions ~ the bar on the history screen is
+// live, not a picture of what happened.
+const oldStill = await react(users[1], 'sad', target);
+check('an old revealed week still takes reactions', oldStill.status === 200,
+  JSON.stringify(oldStill.data));
+
+check('history carries the reaction counts',
+  hist.data.rounds?.[0]?.entries?.some((e) => e.reactions && Object.keys(e.reactions).length),
+  JSON.stringify(hist.data.rounds?.[0]?.entries?.map((e) => e.reactions)));
+check('history entries carry ids so the bar can post',
+  hist.data.rounds?.[0]?.entries?.every((e) => !!e.id));
+check('history ships the face list too', Array.isArray(hist.data.reaction_faces));
 
 console.log('\n— reveal + rollover in a single pass —');
 // A late cron tick, or a group catching up after downtime, can cross the reveal
@@ -251,6 +311,18 @@ console.log('\n— reveal + rollover in a single pass —');
 // announced; earlier this was dropped because only the round the pass ended on
 // got notified.
 await call(users[0], 'POST', `/api/groups/${gid}/advance`, { to: 'guessing' });
+
+// The rule reactions exist under: while guessing is open the entries are
+// anonymous, and a reaction bar would be a side channel for talking about who
+// wrote what. Week 2 is in guessing right now, so its entries must refuse.
+const guessing = (await call(users[0], 'GET', `/api/groups/${gid}`)).data;
+check('week 2 is in guessing', guessing.round.phase === 'guessing');
+const w2entry = guessing.round.entries?.[0]?.id;
+check('guessing exposes entry ids', !!w2entry);
+const tooEarly = await react(users[1], 'happy', w2entry);
+check('SECRECY: reacting during guessing is refused', tooEarly.status === 403,
+  `${tooEarly.status} ${JSON.stringify(tooEarly.data)}`);
+
 const combined = await call(users[0], 'POST', `/api/groups/${gid}/advance`, { to: 'next' });
 const log = combined.data.log || [];
 check('the pass both revealed and rolled over',
