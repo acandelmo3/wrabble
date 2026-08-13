@@ -411,19 +411,29 @@ async function handle(request, env, ctx) {
       // LEFT JOIN on memberships: someone who has since left the group still
       // wrote the entry, and their name should keep showing on it.
       const subs = await env.DB.prepare(
-        `SELECT s.body, ${nameSql('name')} FROM submissions s
+        `SELECT s.id, s.body, ${nameSql('name')} FROM submissions s
            JOIN users u ON u.id = s.user_id
            LEFT JOIN memberships m ON m.user_id = u.id AND m.group_id = ?2
           WHERE s.round_id = ?1`,
       ).bind(r.id, group.id).all();
+      // Reactions outlive the week they were left in ~ an entry that collected
+      // six of them should still show them here, or the history reads as if
+      // the reactions were thrown away.
+      const reacts = await reactionsForRound(env.DB, r.id, user.id);
       out.push({
         week_index: r.week_index,
         prompt: r.prompt_text,
         reveals_at: r.reveals_at,
-        entries: (subs.results || []).map((s) => ({ author: s.name, body: s.body })),
+        entries: (subs.results || []).map((s) => ({
+          id: s.id,
+          author: s.name,
+          body: s.body,
+          reactions: reacts[s.id]?.counts || {},
+          my_reactions: reacts[s.id]?.mine || [],
+        })),
       });
     }
-    return json({ rounds: out });
+    return json({ rounds: out, reaction_faces: FACES });
   }
 
   // Dev-only time travel: force the round forward without waiting for Thursday.
