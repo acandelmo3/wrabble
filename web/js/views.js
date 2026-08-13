@@ -467,7 +467,8 @@ function revealedPanel(data, refresh) {
           ? h('span', { class: 'tag tag-ok' }, 'Correct')
           : h('span', { class: 'tag tag-bad' }, 'Wrong'))
         : null),
-    h('div', { class: 'entry-body' }, e.body)));
+    h('div', { class: 'entry-body' }, e.body),
+    reactionBar(e, round.reaction_faces || [], refresh)));
 
   return h('div', { class: 'stack' },
     promptCard(round, promptLine),
@@ -479,6 +480,79 @@ function revealedPanel(data, refresh) {
     ...entries,
     suggestCard(data),
   );
+}
+
+/**
+ * Wrobby reactions under one revealed entry.
+ *
+ * `faces` comes from the payload, never from a list kept here ~ the worker owns
+ * the set, and the image for a face is always `img/face-<name>.png`.
+ *
+ * The bar redraws from the server's response rather than incrementing a local
+ * count: two people reacting at once would otherwise leave both of them looking
+ * at a number that is quietly wrong until the next refresh.
+ */
+function reactionBar(entry, faces, refresh) {
+  let counts = { ...(entry.reactions || {}) };
+  let mine = new Set(entry.my_reactions || []);
+
+  const bar = h('div', { class: 'reacts' });
+  const tray = h('div', { class: 'react-tray', hidden: true });
+  const wrap = h('div', {}, bar, tray);
+
+  const faceImg = (face, px) => h('img', {
+    src: `img/face-${face}.png`, alt: face, width: px, height: px,
+  });
+
+  async function send(face, btn) {
+    btn.disabled = true;
+    try {
+      const res = await api.react(entry.id, face);
+      counts = res.reactions?.counts || {};
+      mine = new Set(res.reactions?.mine || []);
+      tray.hidden = true;
+      draw();
+    } catch (err) {
+      // A stale tab reacting after the week rolls over is the common case, so
+      // reload the view rather than leaving a bar that cannot work.
+      toast(err.message, 'error');
+      if (/revealed/.test(err.message)) refresh();
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function draw() {
+    const pills = Object.entries(counts).filter(([, n]) => n > 0).map(([face, n]) => {
+      const on = mine.has(face);
+      const btn = h('button', {
+        class: `react ${on ? 'on' : ''}`, type: 'button', title: face,
+        'aria-pressed': on ? 'true' : 'false',
+      }, faceImg(face, 30), h('span', {}, `${n}`));
+      btn.addEventListener('click', () => send(face, btn));
+      return btn;
+    });
+
+    const add = h('button', {
+      class: 'react react-add', type: 'button',
+      'aria-label': 'Add a reaction', 'aria-expanded': tray.hidden ? 'false' : 'true',
+    }, '+');
+    add.addEventListener('click', () => {
+      tray.hidden = !tray.hidden;
+      add.setAttribute('aria-expanded', tray.hidden ? 'false' : 'true');
+    });
+
+    bar.replaceChildren(...pills, add);
+  }
+
+  tray.replaceChildren(...faces.map((face) => {
+    const btn = h('button', { type: 'button', title: face }, faceImg(face, 42));
+    btn.addEventListener('click', () => send(face, btn));
+    return btn;
+  }));
+
+  draw();
+  return wrap;
 }
 
 const LABELS = {

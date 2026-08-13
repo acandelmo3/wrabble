@@ -9,6 +9,17 @@
 // `date` is null while an entry is still unreleased.
 export const NOTES = [
   {
+    title: 'Launch week 2',
+    date: null,
+    added: [
+      'React to entries with Wrobby\'s face. Once the week is revealed, leave a '
+      + 'reaction on anyone\'s entry ~ happy, love, gasp, sad, flustered, '
+      + 'deadpan or dizzy. Tap one again to take it back. Reactions stay shut '
+      + 'until the reveal, so nobody can use them to hint at who wrote what '
+      + 'while guessing is still open.',
+    ],
+  },
+  {
     title: 'Launch week 1',
     date: '2026-08-12',
     added: [
