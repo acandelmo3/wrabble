@@ -10,28 +10,13 @@
 export const NOTES = [
   {
     title: 'Launch week 1',
-    date: null,
+    date: '2026-08-12',
     added: [
-      'Wrobby. A worm. He inches across your group page every so often, minds '
-      + 'his own business, and leaves. He is hand-drawn, and he will be doing '
-      + 'more later.',
-      'Pick your own name. Set one on the home page and every group uses it, '
-      + 'or set a different name inside a single group ~ useful when one group '
-      + 'knows you by something the others don\'t. Clear either to fall back to '
-      + 'the name underneath it.',
+      'Introduced Wrobby, the inch worm! More coming soon...',
+      'Pick your own name. Set one global nickname and/or one for each group '
+      + 'in settings.',
       'A Rankings button on each group, so the standings are one tap away.',
-      'This screen.',
-    ],
-    changed: [
-      'The name you use in one group now lives in that group\'s settings, '
-      + 'instead of at the bottom of the group page.',
-      'Past weeks show your current name, so nothing in the history is '
-      + 'credited to a name nobody recognises.',
-    ],
-    fixed: [
-      'The same player could appear under two different names on one screen ~ '
-      + 'the standings used your Discord display name while the reveal used '
-      + 'your handle.',
+      'This screen!',
     ],
   },
   {
