@@ -10,7 +10,7 @@
 export const NOTES = [
   {
     title: 'Launch week 3',
-    date: null,
+    date: '2026-08-14',
     added: [
       'Wrobby stops to say hello. Partway across the page he now ducks behind '
       + 'the week\'s progress bar, pops his head up between Guessing and '
