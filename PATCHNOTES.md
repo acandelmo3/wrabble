@@ -8,6 +8,16 @@ if a line only matters to whoever deploys it, it belongs in the README instead.
 
 ---
 
+## 2026-08-14 ~ launch week 3
+
+### Added
+
+- **Wrobby stops to say hello.** Partway across the page he now ducks behind
+  the week's progress bar, pops his head up between Guessing and Revealed,
+  wags his tail, and carries on.
+
+---
+
 ## 2026-08-13 ~ launch week 2
 
 ### Added
