@@ -2,6 +2,7 @@ import { h, fmtDate, countdown, wordCount, toast, codePill } from './dom.js';
 import { api, login, logout } from './api.js';
 import { NOTES } from './notes.js';
 import { loadDraft, saveDraft, clearDraft, touchDraft, setDirty } from './drafts.js';
+import { wrobbyPeek } from './wrobby.js';
 import * as art from './art.js';
 
 const DOWS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -209,8 +210,12 @@ export function groupView(data, refresh) {
 
   // Wrobby rides behind the first block, centred on it, positioned out of flow
   // so nothing below shifts down to make room for him.
+  // The peek only ships alongside the phase bar ~ with no round there is no
+  // card for him to be behind, and a head rising out of a bare paragraph reads
+  // as a bug rather than a joke.
   body.append(h('div', { class: 'wrobby-anchor' },
     wrobbyTrack(),
+    ...(round ? [wrobbyPeek()] : []),
     round
       ? phaseBar(round, group, data.server_time)
       : h('p', { class: 'muted' }, 'No round yet ~ check back shortly.')));

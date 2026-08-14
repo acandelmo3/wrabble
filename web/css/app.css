@@ -314,6 +314,12 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
    duration from --wrobby-cycle, and the travel distance is exactly
    --wrobby-step x --wrobby-steps.
 
+   The walk knows nothing about the peek. It is one unbroken crossing, exactly
+   as it always was; the stop is imposed from outside by pausing this animation
+   where it stands (see js/wrobby.js). Keeping the pause out of the keyframes
+   is what lets the stride stay a fixed 58px at every window size instead of
+   becoming some fraction of a viewport-relative distance.
+
    The base `background-image` is not decoration: under reduced motion the
    keyframes stop running, and without it he would have no frame at all. */
 /* Declared on the outer element so the inner animations can all read them — a
@@ -372,6 +378,120 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 1.8rem 1.1rem 4rem; }
 @keyframes wrobby-travel {
   from { transform: translateX(-200px); }
   to   { transform: translateX(calc(-200px + var(--wrobby-step) * var(--wrobby-steps))); }
+}
+
+/* --- Wrobby's peek ---
+   While he is stopped behind the phase card he pops his head over its top
+   edge, holds, wags his tail, holds again, and drops back down.
+
+   Head and tail are two sprites, not one, because the card covers his middle:
+   the drawing has a gap where his body would be and the card fills it. They
+   share a height and both sit on `bottom: 0`, so the strip's bottom edge is
+   the card's top edge and his neck reads as continuing down behind it.
+
+   That only works because the cells are cut to the drawing. The frames as
+   exported carried some 40-odd empty rows under the neck and the tail tip, and
+   with the cell bottom pinned to the card edge that padding held him clear of
+   it — he read as hovering above the box rather than rising out of it. The
+   cells are trimmed so the lowest drawn row *is* the last row.
+
+   He is deliberately *not* mirrored the way the walk cycle is. The two halves
+   were drawn as one picture with his tail out to the right of his head, and
+   flipping the group to face his direction of travel would throw the tail to
+   his left and invent a pose nobody drew. He faces left here and his tail
+   trails right, as on the sheet.
+
+   How far right is --wrobby-peek-reach, in sprite-sheet px. On the sheet the
+   tail sits 595 across, which left a gap wider than his whole head once the
+   pair was scaled down to peek size — at a glance it read as two animals
+   rather than the two ends of one. Pulling it in tightens that without moving
+   either drawing.
+
+   Sizing is one number. --wrobby-peek-w is the head's width; every other box
+   is that times a ratio taken straight off the sprite sheet (a cell is
+   248x368, the tail cell 351 wide, the tail sitting 595 asset-px right of the
+   head), so the two halves cannot drift apart when it is retuned. Keep him
+   near the walking sprite's head — about 40px — or he reads as a second,
+   larger worm. He also has to clear whatever sits above the card: the head
+   rises 0.80 x the cell height, which at 36px leaves room under a wrapped
+   button row. */
+.wrobby-peek {
+  position: absolute;
+  /* The head's own centre lands here. --wrobby-peek-x is written by JS from
+     the measured pill edges, because the seam is a gap in a grid and not
+     something CSS can name; the 65.8% is only the desktop fallback. */
+  left: var(--wrobby-peek-x, 65.8%);
+  bottom: 100%;                       /* his floor is the card's top edge */
+  margin-bottom: -1px;                /* hairline lap, so no gap shows */
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  /* Nothing runs until js/wrobby.js puts .is-peeking on the anchor, so there
+     is no timeline here to keep in step with the walk. Default hidden also
+     means reduced motion — where the global rule strips `animation` outright —
+     leaves him down rather than frozen mid-pop with his head stuck out. */
+  visibility: hidden;
+  --wrobby-peek-w: 36px;
+  --wrobby-peek-reach: 330;   /* 595 on the sheet; see above */
+}
+/* One class on the anchor drives the whole beat: the crossing freezes where it
+   stands and the head comes up. Freezing is `animation-play-state` and not a
+   pause() through the web-animations API — a CSSAnimation paused that way is
+   handed back to the style engine on the next recalc and simply carries on
+   walking, which is exactly what it did here. */
+.wrobby-anchor.is-peeking .wrobby-walk,
+.wrobby-anchor.is-peeking .wrobby { animation-play-state: paused; }
+.wrobby-anchor.is-peeking .wrobby-peek { visibility: visible; }
+.wrobby-anchor.is-peeking .wrobby-peek-head {
+  animation: wrobby-peek-head var(--wrobby-peek-len, 9s) step-end 1 both;
+}
+.wrobby-anchor.is-peeking .wrobby-peek-tail {
+  animation: wrobby-peek-tail var(--wrobby-peek-len, 9s) step-end 1 both;
+}
+.wrobby-peek-head,
+.wrobby-peek-tail {
+  position: absolute;
+  bottom: 0;
+  height: calc(var(--wrobby-peek-w) * 368 / 248);
+  background-repeat: no-repeat;
+}
+.wrobby-peek-head {
+  left: calc(var(--wrobby-peek-w) / -2);
+  width: var(--wrobby-peek-w);
+  background-image: url(../img/wrobby-peek-head.png);
+  background-size: 200% 100%;         /* 2 frames: low, up */
+}
+/* Measured right from the head's left edge, so retuning the reach never moves
+   the head off the seam. */
+.wrobby-peek-tail {
+  left: calc(var(--wrobby-peek-w) * var(--wrobby-peek-reach) / 248
+             - var(--wrobby-peek-w) / 2);
+  width: calc(var(--wrobby-peek-w) * 351 / 248);
+  background-image: url(../img/wrobby-peek-tail.png);
+  background-size: 400% 100%;         /* 4 frames: nub, half, wag out, wag back */
+}
+/* Up at 0.3s, down at 8.7s — the long middle is deliberate. The pause either
+   side of the wag is what sells it as him noticing you and then deciding. */
+@keyframes wrobby-peek-head {
+  0%       { background-position-x: 0%; }
+  3.3333%  { background-position-x: 100%; }
+  96.6667% { background-position-x: 0%; }
+}
+/* Tail is absent for the first third, then rises, wags three times out-and-
+   back, and withdraws — 3.0s to 6.2s of the nine. */
+@keyframes wrobby-peek-tail {
+  0%       { opacity: 0; }
+  33.3333% { opacity: 1; background-position-x: 0%; }
+  35.5556% { background-position-x: 33.3333%; }
+  37.7778% { background-position-x: 66.6667%; }
+  42.2222% { background-position-x: 100%; }
+  46.6667% { background-position-x: 66.6667%; }
+  51.1111% { background-position-x: 100%; }
+  55.5556% { background-position-x: 66.6667%; }
+  60%      { background-position-x: 100%; }
+  64.4444% { background-position-x: 33.3333%; }
+  66.6667% { background-position-x: 0%; }
+  68.8889% { opacity: 0; }
 }
 
 @keyframes settle {
