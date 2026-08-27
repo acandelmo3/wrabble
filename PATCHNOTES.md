@@ -8,6 +8,14 @@ if a line only matters to whoever deploys it, it belongs in the README instead.
 
 ---
 
+## 2026-08-27 ~ launch week 4
+
+### Changed
+
+- Players can now **only** guess from the list of players who submitted a response.
+
+---
+
 ## 2026-08-14 ~ launch week 3
 
 ### Added
