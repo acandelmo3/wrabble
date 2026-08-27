@@ -283,7 +283,8 @@ view = (await call(users[0], 'GET', `/api/groups/${gid}`)).data;
 check('SECRECY: week 2 hides entries again',
   view.round.phase === 'writing' && view.round.entries === undefined,
   `phase ${view.round.phase}`);
-for (const u of users) {
+// Carol sits week 2 out on purpose ~ she must not appear on the ballot below.
+for (const u of [users[0], users[1]]) {
   await call(u, 'PUT', `/api/rounds/${view.round.id}/submission`, { body: `${u.name} week two` });
 }
 check('standings carried over', view.leaderboard.reduce((a, b) => a + b.total, 0) === 18,
@@ -319,6 +320,16 @@ const guessing = (await call(users[0], 'GET', `/api/groups/${gid}`)).data;
 check('week 2 is in guessing', guessing.round.phase === 'guessing');
 const w2entry = guessing.round.entries?.[0]?.id;
 check('guessing exposes entry ids', !!w2entry);
+
+// The ballot is the writers, nobody else. Carol wrote nothing this week, so
+// she is neither offered nor accepted as an answer.
+check('the ballot is exactly this week\'s writers',
+  guessing.round.entrant_ids?.slice().sort().join(',') === '1001,1002',
+  JSON.stringify(guessing.round.entrant_ids));
+const absentee = await call(users[1], 'POST', `/api/rounds/${guessing.round.id}/guesses`,
+  { guesses: { [w2entry]: '1003' } });
+check('guessing a player who sat the week out is refused', absentee.status === 400,
+  `${absentee.status} ${JSON.stringify(absentee.data)}`);
 const tooEarly = await react(users[1], 'happy', w2entry);
 check('SECRECY: reacting during guessing is refused', tooEarly.status === 403,
   `${tooEarly.status} ${JSON.stringify(tooEarly.data)}`);

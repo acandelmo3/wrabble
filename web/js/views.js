@@ -370,14 +370,16 @@ function writingPanel(data, refresh) {
 
 function guessingPanel(data, refresh) {
   const { round, members, me } = data;
-  const others = members.filter((m) => m.id !== me.id);
+  // Only this week's writers can be the answer, so only they are offered.
+  // The server sends the set; anyone who sat the week out is not on it.
+  const entrants = members.filter((m) => (round.entrant_ids || []).includes(m.id));
   const picks = { ...round.my_guesses };
   let promptPick = round.my_prompt_guess;
 
   const entryCards = round.entries.map((e, i) => {
     const select = h('select', { class: 'select', disabled: e.mine },
       h('option', { value: '' }, e.mine ? 'This one is yours' : 'Who wrote this?'),
-      ...members.map((m) => h('option', {
+      ...entrants.map((m) => h('option', {
         value: m.id, selected: picks[e.id] === m.id,
       }, m.id === me.id ? `${m.username} (me)` : m.username)));
     select.addEventListener('change', () => { picks[e.id] = select.value; });

@@ -308,10 +308,19 @@ async function handle(request, env, ctx) {
     ).bind(round.id, user.id).all();
     const own = new Set((ownRes.results || []).map((r) => r.id));
 
+    // Only people who actually wrote something this week can be the answer.
+    // The UI only offers those, but the rule lives here so a stale client
+    // cannot store a guess that could never be right.
+    const entrantsRes = await env.DB.prepare(
+      `SELECT DISTINCT user_id FROM submissions WHERE round_id = ?1`,
+    ).bind(round.id).all();
+    const entrants = new Set((entrantsRes.results || []).map((r) => r.user_id));
+
     const entries = Object.entries(body.guesses || {});
     const stmts = [];
     for (const [submissionId, guessedUserId] of entries) {
       if (!guessedUserId || own.has(submissionId)) continue;
+      if (!entrants.has(guessedUserId)) bad('that player did not write anything this week');
       stmts.push(env.DB.prepare(
         `INSERT INTO guesses (round_id, guesser_id, submission_id, guessed_user_id, created_at)
          VALUES (?1, ?2, ?3, ?4, ?5)
@@ -588,6 +597,11 @@ async function groupView(env, group, user) {
           id: e.id, body: e.body, mine: e.user_id === user.id,
         })),
         my_guesses: myGuesses,
+        // Who is on the ballot. Names without an entry this week are not
+        // possible answers, so offering them is only ever a red herring.
+        // This is the one thing the entry list is allowed to say about
+        // authorship: the set of writers, never which entry is whose.
+        entrant_ids: [...new Set(entries.map((e) => e.user_id))],
         my_prompt_guess: myPromptGuess?.guessed_user_id || null,
         has_prompt_author: !!round.prompt_author_id,
       },
