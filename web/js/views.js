@@ -372,7 +372,14 @@ function guessingPanel(data, refresh) {
   const { round, members, me } = data;
   // Only this week's writers can be the answer, so only they are offered.
   // The server sends the set; anyone who sat the week out is not on it.
-  const entrants = members.filter((m) => (round.entrant_ids || []).includes(m.id));
+  //
+  // A Worker older than this page does not send the field at all. Filtering on
+  // a missing set emptied the dropdown down to its placeholder and left the
+  // week unplayable, so an absent field falls back to the whole group ~ the
+  // API is the thing that actually enforces the rule either way.
+  const entrants = Array.isArray(round.entrant_ids)
+    ? members.filter((m) => round.entrant_ids.includes(m.id))
+    : members;
   const picks = { ...round.my_guesses };
   let promptPick = round.my_prompt_guess;
 
